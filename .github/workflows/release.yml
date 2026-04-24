@@ -6,7 +6,7 @@ on:
       ref:
         description: 要发布的分支、tag 或 commit SHA
         required: true
-        default: main
+        default: master
         type: string
 
 permissions:
@@ -64,6 +64,18 @@ jobs:
 
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "::error::远端已经存在 tag $TAG"
+            exit 1
+          fi
+
+      - name: Ensure target ref is reachable from default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch origin "$DEFAULT_BRANCH"
+          TARGET_SHA=$(git rev-parse HEAD)
+
+          if ! git merge-base --is-ancestor "$TARGET_SHA" "origin/$DEFAULT_BRANCH"; then
+            echo "::error::目标 ref 不在 origin/$DEFAULT_BRANCH 提交链上，拒绝创建发布 tag"
             exit 1
           fi
 

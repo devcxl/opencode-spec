@@ -1,6 +1,6 @@
 {
   "name": "opencode-spec",
-  "version": "0.1.0beta",
+  "version": "0.1.0-beta.0",
   "description": "OpenSpec workflow plugin for OpenCode",
   "repository": {
     "type": "git",
@@ -34,6 +34,9 @@
     "assets",
     "README.md"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepublishOnly": "npm test && npm run typecheck && npm run build",

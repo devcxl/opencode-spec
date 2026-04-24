@@ -1,0 +1,95 @@
+name: Publish to npm
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: 发布到 npm registry
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read package version
+        id: package
+        run: |
+          VERSION=$(node -e "console.log(JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version)")
+          DIST_TAG=$(node -e "const version = JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version; const prerelease = version.split('-')[1]; console.log(prerelease ? prerelease.split('.')[0] : 'latest')")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=${DIST_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release tag matches package version
+        env:
+          EXPECTED_TAG: v${{ steps.package.outputs.version }}
+          CURRENT_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ "$CURRENT_TAG" != "$EXPECTED_TAG" ]; then
+            echo "::error::GitHub Release tag ($CURRENT_TAG) 与 package.json 版本不一致，期望为 $EXPECTED_TAG"
+            exit 1
+          fi
+
+      - name: Ensure release commit is reachable from default branch
+        env:
+          CURRENT_TAG: ${{ github.event.release.tag_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch origin "$DEFAULT_BRANCH"
+          RELEASE_SHA=$(git rev-list -n 1 "$CURRENT_TAG")
+
+          if ! git merge-base --is-ancestor "$RELEASE_SHA" "origin/$DEFAULT_BRANCH"; then
+            echo "::error::Release tag ($CURRENT_TAG) 对应提交不在 origin/$DEFAULT_BRANCH 提交链上，拒绝发布到 npm"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Build package
+        run: npm run build
+
+      - name: Check npm package contents
+        run: npm pack --dry-run
+
+      - name: Publish to npm registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ steps.package.outputs.dist_tag }}
+        run: npm publish --ignore-scripts --tag "$DIST_TAG"
+
+      - name: Write summary
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          DIST_TAG: ${{ steps.package.outputs.dist_tag }}
+        run: |
+          {
+            echo "## npm publish completed"
+            echo ""
+            echo "- Release: \\`${RELEASE_NAME}\\`"
+            echo "- Tag: \\`${RELEASE_TAG}\\`"
+            echo "- npm dist-tag: \\`${DIST_TAG}\\`"
+            echo "- Registry: \\`https://registry.npmjs.org/\\`"
+          } >> "$GITHUB_STEP_SUMMARY"
