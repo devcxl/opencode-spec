@@ -15,7 +15,44 @@ export const OpencodeSpec: Plugin = async (ctx) => {
   return {
     event: async ({ event }) => {
       if (event.type === "session.created" && (syncResult.changed || syncResult.conflicts.length > 0)) {
-        console.log(buildSessionNotice(syncResult))
+        const notice = buildSessionNotice(syncResult)
+        const body = {
+          duration: notice.duration,
+          title: notice.title,
+          message: notice.message,
+          variant: notice.variant,
+        }
+
+        if (typeof ctx.client.tui?.showToast === "function") {
+          try {
+            await ctx.client.tui.showToast({ body })
+            return
+          } catch (error) {
+            await ctx.client.app.log({
+              body: {
+                service: "opencode-spec",
+                level: "warn",
+                message: "显示启动提示失败，已降级为应用日志。",
+                extra: {
+                  error: error instanceof Error ? error.message : String(error),
+                },
+              },
+            })
+          }
+        }
+
+        await ctx.client.app.log({
+          body: {
+            service: "opencode-spec",
+            level: notice.variant === "warning" ? "warn" : "info",
+            message: notice.message,
+            extra: {
+              duration: notice.duration,
+              title: notice.title,
+              variant: notice.variant,
+            },
+          },
+        })
       }
     },
     tool: createOpenSpecTools(),
