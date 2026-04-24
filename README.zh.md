@@ -134,7 +134,6 @@ npm run build
 
 ## 文档索引
 
-- [`README.zh.md`](README.zh.md)：中文 README 版本
 - [`README.en.md`](README.en.md)：English README
 - [`docs/zh/usage.md`](docs/zh/usage.md)：中文使用指南
 - [`docs/zh/reference.md`](docs/zh/reference.md)：中文参考文档
