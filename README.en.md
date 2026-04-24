@@ -22,7 +22,7 @@ Add this to `opencode.json` at the project root:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-spec"]
+  "plugin": ["@devcxl/opencode-spec"]
 }
 ```
 
