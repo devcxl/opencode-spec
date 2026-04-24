@@ -132,6 +132,10 @@ Where:
 - `npm run typecheck`: runs TypeScript type checking
 - `npm run build`: compiles to `dist/`
 
+## Acknowledgements
+
+The workflow design of this project is inspired by OpenSpec. Thanks to OpenSpec for providing a clear spec-driven development model that made it possible to bring this workflow into OpenCode more naturally through `opencode-spec`.
+
 ## Documentation Index
 
 - [`README.md`](README.md): default Chinese README

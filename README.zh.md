@@ -132,6 +132,10 @@ npm run build
 - `npm run typecheck`：执行 TypeScript 类型检查
 - `npm run build`：编译到 `dist/`
 
+## 致谢
+
+本项目的工作流设计受到 OpenSpec 启发。感谢 OpenSpec 提供清晰的规格驱动开发思路，让 `opencode-spec` 可以把这套流程更自然地接入 OpenCode。
+
 ## 文档索引
 
 - [`README.en.md`](README.en.md)：English README
