@@ -7,6 +7,7 @@ import {
   pathExists,
   renderTemplate,
   slugify,
+  validateTasksMarkdown,
   writeText,
 } from "./common.js"
 
@@ -35,6 +36,10 @@ export async function proposeChange(input: ProposeChangeInput) {
   const specTemplate = await getTemplate(input.projectDir, "spec")
 
   const values = { name: slug, slug }
+  const tasksContent = input.tasks ?? renderTemplate(tasksTemplate, values)
+  if (input.tasks) {
+    validateTasksMarkdown(tasksContent)
+  }
 
   const files = {
     design: path.join(targetDir, "design.md"),
@@ -45,7 +50,7 @@ export async function proposeChange(input: ProposeChangeInput) {
 
   await writeText(files.proposal, input.proposal ?? renderTemplate(proposalTemplate, values))
   await writeText(files.design, input.design ?? renderTemplate(designTemplate, values))
-  await writeText(files.tasks, input.tasks ?? renderTemplate(tasksTemplate, values))
+  await writeText(files.tasks, tasksContent)
   await writeText(files.spec, input.spec ?? renderTemplate(specTemplate, values))
 
   return {

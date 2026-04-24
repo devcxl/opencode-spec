@@ -3,11 +3,11 @@ import path from "node:path"
 import {
   appendVerificationNotes,
   changeDir,
+  markTasksComplete,
   parseTasks,
   readOptionalText,
   slugify,
   writeText,
-  markTasksComplete,
 } from "./common.js"
 
 export interface PrepareApplyInput {

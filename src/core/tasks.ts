@@ -1,6 +1,6 @@
 import path from "node:path"
 
-import { changeDir, getTemplate, pathExists, renderTemplate, slugify, writeText } from "./common.js"
+import { changeDir, getTemplate, pathExists, renderTemplate, slugify, validateTasksMarkdown, writeText } from "./common.js"
 
 export interface UpdateTasksInput {
   projectDir: string
@@ -17,6 +17,9 @@ export async function updateTasks(input: UpdateTasksInput) {
   }
 
   const content = input.content ?? renderTemplate(await getTemplate(input.projectDir, "tasks"), { name: slug, slug })
+  if (input.content) {
+    validateTasksMarkdown(content)
+  }
   await writeText(filePath, content)
 
   return {
