@@ -201,7 +201,7 @@ describe("OpenSpec core workflow", () => {
     ).rejects.toThrow(/重复的机器任务 ID/)
   })
 
-  it("proposeChange 和 updateTasks 会兼容历史自定义 tasks 模板", async () => {
+  it("自定义非法 tasks 模板会在 propose 和 reset 时被拒绝", async () => {
     const projectDir = await makeTempDir("opencode-spec-core-")
     const templateDir = path.join(projectDir, ".opencode", "opencode-spec", "templates")
 
@@ -220,16 +220,19 @@ describe("OpenSpec core workflow", () => {
       "utf8",
     )
 
-    const proposed = await proposeChange({ projectDir, name: "Legacy Template Tasks" })
+    await expect(proposeChange({ projectDir, name: "Invalid Template Tasks" })).rejects.toThrow(/机器任务 ID 格式/)
 
-    await expect(
-      readFile(path.join(projectDir, "openspec", "changes", proposed.slug, "tasks.md"), "utf8"),
-    ).resolves.toContain("- [ ] 完成实现")
+    const proposed = await proposeChange({
+      projectDir,
+      name: "Reset Invalid Template Tasks",
+      tasks: `# Tasks: reset-invalid-template-tasks
 
-    await expect(updateTasks({ projectDir, name: proposed.slug })).resolves.toEqual({
-      path: path.join("openspec", "changes", proposed.slug, "tasks.md"),
-      slug: proposed.slug,
+## Implementation
+- [ ] 1.1 完成实现
+`,
     })
+
+    await expect(updateTasks({ projectDir, name: proposed.slug })).rejects.toThrow(/机器任务 ID 格式/)
   })
 
   it("prepareApply 会拒绝已有文件中的前导零机器任务 ID", async () => {

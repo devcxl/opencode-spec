@@ -37,9 +37,7 @@ export async function proposeChange(input: ProposeChangeInput) {
 
   const values = { name: slug, slug }
   const tasksContent = input.tasks ?? renderTemplate(tasksTemplate, values)
-  if (input.tasks) {
-    validateTasksMarkdown(tasksContent)
-  }
+  validateTasksMarkdown(tasksContent)
 
   const files = {
     design: path.join(targetDir, "design.md"),

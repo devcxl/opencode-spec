@@ -17,9 +17,7 @@ export async function updateTasks(input: UpdateTasksInput) {
   }
 
   const content = input.content ?? renderTemplate(await getTemplate(input.projectDir, "tasks"), { name: slug, slug })
-  if (input.content) {
-    validateTasksMarkdown(content)
-  }
+  validateTasksMarkdown(content)
   await writeText(filePath, content)
 
   return {
