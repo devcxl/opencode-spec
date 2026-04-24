@@ -1,0 +1,49 @@
+name: Draft Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  draft-release:
+    name: 根据 tag 创建发布草稿
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read package version
+        id: package
+        run: |
+          VERSION=$(node -e "console.log(JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version)")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag matches package version
+        env:
+          EXPECTED_TAG: v${{ steps.package.outputs.version }}
+          CURRENT_TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$CURRENT_TAG" != "$EXPECTED_TAG" ]; then
+            echo "::error::推送的 tag ($CURRENT_TAG) 与 package.json 版本不一致，期望为 $EXPECTED_TAG"
+            exit 1
+          fi
+
+      - name: Create or update draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true

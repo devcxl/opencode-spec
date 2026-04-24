@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 要发布的分支、tag 或 commit SHA
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  create-tag:
+    name: 校验并创建发布 tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout target ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Build package
+        run: npm run build
+
+      - name: Check npm package contents
+        run: npm pack --dry-run
+
+      - name: Read package version
+        id: package
+        run: |
+          VERSION=$(node -e "console.log(JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version)")
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure tag does not already exist
+        env:
+          TAG: ${{ steps.package.outputs.tag }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::本地 checkout 中已经存在 tag $TAG"
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::远端已经存在 tag $TAG"
+            exit 1
+          fi
+
+      - name: Create tag
+        env:
+          TAG: ${{ steps.package.outputs.tag }}
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          git tag "$TAG"
+          echo "已创建 tag $TAG，对应 package.json version=$VERSION"
+
+      - name: Push tag to origin
+        env:
+          TAG: ${{ steps.package.outputs.tag }}
+        run: git push origin "$TAG"
+
+      - name: Write summary
+        env:
+          TAG: ${{ steps.package.outputs.tag }}
+          VERSION: ${{ steps.package.outputs.version }}
+          RELEASE_REF: ${{ inputs.ref }}
+        run: |
+          {
+            echo "## Release tag created"
+            echo ""
+            echo "- Ref: \`${RELEASE_REF}\`"
+            echo "- Version: \`${VERSION}\`"
+            echo "- Tag: \`${TAG}\`"
+            echo ""
+            echo "已推送 tag。接下来会由 `Draft Release` workflow 自动创建 GitHub draft release。"
+          } >> "$GITHUB_STEP_SUMMARY"
