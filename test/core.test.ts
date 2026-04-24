@@ -62,7 +62,8 @@ describe("OpenSpec core workflow", () => {
       path.join(projectDir, "openspec", "changes", "add-dark-mode", "tasks.md"),
       "utf8",
     )
-    expect(initialTasksContent).toContain("任务 ID 必须使用纯数字分段格式")
+    expect(initialTasksContent).not.toContain("任务 ID 必须使用纯数字分段格式")
+    expect(initialTasksContent).toContain("- [ ] 1.1 完成实现")
 
     await updateDesign({
       projectDir,

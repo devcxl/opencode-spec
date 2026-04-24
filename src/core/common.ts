@@ -34,9 +34,6 @@ export const DEFAULT_TEMPLATES = {
 `,
   tasks: `# Tasks: {{name}}
 
-> 任务 ID 必须使用纯数字分段格式，例如 \`1.1\`、\`1.2\`、\`2.1.1\`。
-> 不要使用前导零、括号、\`Step 1\`、\`1)\`、\`1-1\` 等格式。
-
 ## Implementation
 - [ ] 1.1 完成实现
 
