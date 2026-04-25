@@ -1,5 +1,6 @@
 import path from "node:path"
 
+import { touchChangeMeta } from "./change.js"
 import {
   appendVerificationNotes,
   changeDir,
@@ -9,6 +10,7 @@ import {
   slugify,
   writeText,
 } from "./common.js"
+import { toRelativePath } from "./paths.js"
 
 export interface PrepareApplyInput {
   projectDir: string
@@ -39,6 +41,7 @@ export async function prepareApply(input: PrepareApplyInput) {
 
   if (nextContent !== current) {
     await writeText(filePath, nextContent)
+    await touchChangeMeta(input.projectDir, slug)
   }
 
   const tasks = parseTasks(nextContent)
@@ -46,7 +49,7 @@ export async function prepareApply(input: PrepareApplyInput) {
   return {
     completedTaskIds: tasks.filter((task) => task.checked).map((task) => task.id),
     missingTaskIds,
-    path: path.relative(input.projectDir, filePath).replace(/\\/g, "/"),
+    path: toRelativePath(input.projectDir, filePath),
     pendingTaskIds: tasks.filter((task) => !task.checked).map((task) => task.id),
     slug,
     tasks,

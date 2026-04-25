@@ -1,6 +1,8 @@
 import path from "node:path"
 
+import { touchChangeMeta } from "./change.js"
 import { changeDir, getTemplate, pathExists, renderTemplate, slugify, validateTasksMarkdown, writeText } from "./common.js"
+import { toRelativePath } from "./paths.js"
 
 export interface UpdateTasksInput {
   projectDir: string
@@ -10,18 +12,21 @@ export interface UpdateTasksInput {
 
 export async function updateTasks(input: UpdateTasksInput) {
   const slug = slugify(input.name)
-  const filePath = path.join(changeDir(input.projectDir, slug), "tasks.md")
+  const targetDir = changeDir(input.projectDir, slug)
+  const filePath = path.join(targetDir, "tasks.md")
 
-  if (!(await pathExists(filePath))) {
-    throw new Error(`未找到变更 ${slug} 的 tasks.md`)
+  if (!(await pathExists(targetDir))) {
+    throw new Error(`未找到变更 ${slug}`)
   }
 
   const content = input.content ?? renderTemplate(await getTemplate(input.projectDir, "tasks"), { name: slug, slug })
   validateTasksMarkdown(content)
   await writeText(filePath, content)
+  await touchChangeMeta(input.projectDir, slug)
 
   return {
-    path: path.relative(input.projectDir, filePath).replace(/\\/g, "/"),
+    path: toRelativePath(input.projectDir, filePath),
+    paths: [toRelativePath(input.projectDir, filePath)],
     slug,
   }
 }

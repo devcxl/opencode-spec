@@ -53,10 +53,13 @@ describe("OpenSpec core workflow", () => {
     const proposed = await proposeChange({ projectDir, name: "Add Dark Mode" })
 
     expect(proposed.slug).toBe("add-dark-mode")
+    expect(proposed.schema).toBe("spec-driven")
+    expect(proposed.metaPath).toBe("openspec/changes/add-dark-mode/.openspec.yaml")
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "proposal.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "design.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "tasks.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "specs", "spec.md"))).toBe(true)
+    expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", ".openspec.yaml"))).toBe(true)
 
     const initialTasksContent = await readFile(
       path.join(projectDir, "openspec", "changes", "add-dark-mode", "tasks.md"),
@@ -105,7 +108,7 @@ describe("OpenSpec core workflow", () => {
     })
 
     const archived = await archiveChange({ projectDir, name: proposed.slug })
-    expect(archived.archivedTo).toContain(path.join("openspec", "changes", "archive", "add-dark-mode"))
+    expect(archived.archivedTo).toMatch(/openspec\/changes\/archive\/\d{4}-\d{2}-\d{2}-add-dark-mode/)
     expect(await exists(path.join(projectDir, "openspec", "specs", "add-dark-mode", "spec.md"))).toBe(true)
 
     const list = await listChanges({ projectDir })
@@ -114,7 +117,7 @@ describe("OpenSpec core workflow", () => {
     expect(list.archived[0]?.name).toBe("add-dark-mode")
 
     const tasksContent = await readFile(
-      path.join(projectDir, "openspec", "changes", "archive", "add-dark-mode", "tasks.md"),
+      path.join(projectDir, archived.archivedTo, "tasks.md"),
       "utf8",
     )
 

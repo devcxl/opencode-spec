@@ -1,12 +1,16 @@
 import path from "node:path"
 
+import { resolveChangeMeta } from "./change.js"
 import { archiveRoot, changeDir, changesRoot, listDirectories, parseTasks, readOptionalText, slugify } from "./common.js"
+import { toRelativePath } from "./paths.js"
+import { verifyChange } from "./verify.js"
 
 export interface ChangeSummary {
   completedTasks: number
   name: string
   path: string
   pendingTasks: number
+  schema?: "spec-driven"
   status: "in-progress" | "ready-to-archive" | "archived"
 }
 
@@ -16,18 +20,25 @@ export interface ListChangesInput {
 
 async function summarizeChange(projectDir: string, rootDir: string, name: string, archived = false): Promise<ChangeSummary> {
   const normalizedName = slugify(name)
-  const tasksPath = path.join(rootDir, normalizedName, "tasks.md")
+  const tasksPath = path.join(rootDir, name, "tasks.md")
   const content = (await readOptionalText(tasksPath)) ?? ""
   const tasks = parseTasks(content)
   const completedTasks = tasks.filter((task) => task.checked).length
   const pendingTasks = tasks.filter((task) => !task.checked).length
+  const meta = await resolveChangeMeta(projectDir, normalizedName)
+  const status: ChangeSummary["status"] = archived
+    ? "archived"
+    : await verifyChange({ projectDir, name: meta.slug })
+        .then((result) => (result.readyToArchive ? "ready-to-archive" : "in-progress"))
+        .catch(() => "in-progress")
 
   return {
     completedTasks,
-    name: normalizedName,
-    path: path.relative(projectDir, path.join(rootDir, normalizedName)).replace(/\\/g, "/"),
+    name: meta.slug,
+    path: toRelativePath(projectDir, path.join(rootDir, name)),
     pendingTasks,
-    status: archived ? "archived" : pendingTasks === 0 ? "ready-to-archive" : "in-progress",
+    schema: meta.schema,
+    status,
   }
 }
 

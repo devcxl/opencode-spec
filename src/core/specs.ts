@@ -2,31 +2,29 @@ import path from "node:path"
 
 import { touchChangeMeta } from "./change.js"
 import { changeDir, getTemplate, pathExists, renderTemplate, slugify, writeText } from "./common.js"
-import { toRelativePath } from "./paths.js"
+import { changeSpecsDir, toRelativePath } from "./paths.js"
 
-export interface UpdateDesignInput {
+export interface UpdateSpecsInput {
   projectDir: string
   name: string
   content?: string
 }
 
-export async function updateDesign(input: UpdateDesignInput) {
+export async function updateSpecs(input: UpdateSpecsInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)
-  const filePath = path.join(targetDir, "design.md")
 
   if (!(await pathExists(targetDir))) {
     throw new Error(`未找到变更 ${slug}`)
   }
 
-  const content =
-    input.content ?? renderTemplate(await getTemplate(input.projectDir, "design"), { name: slug, slug })
+  const filePath = path.join(changeSpecsDir(input.projectDir, slug), "spec.md")
+  const content = input.content ?? renderTemplate(await getTemplate(input.projectDir, "spec"), { name: slug, slug })
 
   await writeText(filePath, content)
   await touchChangeMeta(input.projectDir, slug)
 
   return {
-    path: toRelativePath(input.projectDir, filePath),
     paths: [toRelativePath(input.projectDir, filePath)],
     slug,
   }

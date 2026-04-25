@@ -1,4 +1,4 @@
-import { ensureOpenSpecStructure } from "./common.js"
+import { ensureOpenSpecStructure } from "./paths.js"
 
 export interface InitializeOpenSpecInput {
   projectDir: string

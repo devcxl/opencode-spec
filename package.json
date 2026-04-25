@@ -19,7 +19,9 @@
   ],
   "type": "module",
   "main": "./dist/index.js",
-  "oc-plugin": ["server"],
+  "oc-plugin": [
+    "server"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js"
@@ -44,7 +46,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "^1.3.7"
+    "@opencode-ai/plugin": "^1.3.7",
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
