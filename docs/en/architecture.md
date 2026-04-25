@@ -2,13 +2,12 @@
 
 [Back to README](../../README.en.md) | [中文](../zh/architecture.md)
 
-`opencode-spec` integrates the OpenSpec workflow into OpenCode using a “plugin-provided tools + file-synced commands / skills / templates” model.
+`opencode-spec` integrates the OpenSpec workflow into OpenCode by syncing workflow assets into the project and letting commands / skills execute bundled reference scripts.
 
 ## Capability boundaries
 
 The plugin directly handles:
 
-- registering OpenSpec-related custom tools
 - syncing asset files at startup
 - emitting sync notices when a session is created
 
@@ -17,8 +16,9 @@ The plugin indirectly integrates:
 - commands
 - skills
 - templates
+- reference scripts
 
-These three are not dynamically registered by the plugin. Instead, they are written into the project's `.opencode/` directory and then loaded by OpenCode's native discovery mechanism.
+These assets are not dynamically registered by the plugin. Instead, they are written into the project's `.opencode/` directory and then loaded or executed by OpenCode's native discovery mechanism.
 
 ## Startup sync flow
 
@@ -62,7 +62,7 @@ On the `session.created` event, the plugin emits a notice based on sync results,
 - how many asset files were synced
 - whether user modifications were detected and `.new` files were generated
 - whether commands / skills changed and therefore OpenCode should be restarted
-- the recommended workflow: `propose → design → tasks → apply → archive`
+- the recommended workflow: `proposal → specs → design → tasks → apply → archive`
 
 ## Current limitation
 
@@ -73,4 +73,4 @@ Because of that, this plugin currently uses a workaround:
 - workflow constraints are carried by skill and command templates
 - startup sync and session notices provide the operational guidance
 
-That is also why commands / skills are integrated through file sync instead of pure runtime registration.
+That is also why commands / skills / reference scripts are integrated through file sync instead of pure runtime registration.

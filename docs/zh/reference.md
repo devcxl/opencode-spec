@@ -2,51 +2,37 @@
 
 [返回 README](../../README.md) | [English](../en/reference.md)
 
-本文档汇总 `opencode-spec` 提供的 tools、commands 与推荐工作流。
-
-## Tools
-
-- `openspec-init`
-- `openspec-propose`
-- `openspec-design`
-- `openspec-tasks`
-- `openspec-apply`
-- `openspec-archive`
-- `openspec-list`
+本文档汇总 `opencode-spec` 提供的 commands、skills 与工作流。
 
 ## Commands
 
 - `/opsx-propose`
-- `/opsx-design`
-- `/opsx-tasks`
+- `/opsx-explore`
 - `/opsx-apply`
 - `/opsx-archive`
-- `/opsx-list`
 
-## 推荐工作流
+## Skills
 
-推荐顺序：
+| Skill | 说明 | 内置脚本 |
+|-------|------|---------|
+| `openspec-propose` | 创建 change 并生成 artifacts | new-change.js, status.js, instructions.js |
+| `openspec-explore` | 探索问题、澄清需求 | list.js |
+| `openspec-apply` | 执行实现并标记任务 | prepare-apply.js, mark-tasks.js |
+| `openspec-archive` | 归档完成的 change | archive.js |
 
-1. `propose`
-2. `design`
-3. `tasks`
-4. `apply`
-5. `archive`
+## 工作流
 
-建议理解为：
+```
+propose → apply → archive
+explore（可选，随时使用）
+```
 
-- `propose`：定义变更目标与范围
-- `design`：补充设计方案与取舍
-- `tasks`：把变更拆成可执行任务
-- `apply`：按任务推进实现并回写状态
-- `archive`：在验证完成后归档变更
+## 资源同步
 
-## 资源同步位置
-
-插件启动后会同步以下资源：
+插件启动后同步以下资源：
 
 - `assets/commands/*` → `.opencode/commands/*`
 - `assets/skills/*` → `.opencode/skills/*`
 - `assets/templates/*` → `.opencode/opencode-spec/templates/*`
 
-如果 commands 或 skills 首次写入，或发生升级，建议重启 OpenCode。
+如果 skills 首次写入或发生升级，建议重启 OpenCode。

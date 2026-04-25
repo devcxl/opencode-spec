@@ -8,10 +8,7 @@
 
 `opencode-spec` 是一个 OpenCode 插件，用于把 OpenSpec 风格的规格驱动开发流程接入 OpenCode。
 
-它同时提供两类能力：
-
-1. **插件直接提供**：OpenSpec custom tools、启动时资源同步、会话提示
-2. **通过文件发现接入**：commands、skills、templates 自动同步到项目 `.opencode/` 目录
+插件会把 commands、skills、templates 以及 reference scripts 同步到项目 `.opencode/` 目录，并在会话启动时提示同步结果。
 
 ## 使用指南
 
@@ -29,49 +26,44 @@
 启动 OpenCode 后，插件会自动同步以下资源：
 
 - `.opencode/commands/opsx-*.md`
-- `.opencode/skills/openspec/SKILL.md`
+- `.opencode/skills/openspec-*/**`
+- `.opencode/skills/_shared/**`
 - `.opencode/opencode-spec/templates/*.md`
 
 如果 commands 或 skills 是首次写入，或被插件升级覆盖，建议重启 OpenCode，让原生发现机制重新扫描。
 
 ### 2. 初始化 OpenSpec 目录
 
-首次接入时，先执行初始化工具或工作流命令，创建 OpenSpec 所需目录结构。
-
-可用入口：
-
-- tool：`openspec-init`
-- command：按你的工作方式选择 `/opsx-propose` 等工作流命令
+首次接入时，直接从 `/opsx-propose` 开始，或让 Agent 调用 `openspec-propose` skill；脚本会自动创建 OpenSpec 所需目录结构。
 
 ### 3. 按推荐流程推进变更
 
 推荐工作流：
 
 1. `propose`
-2. `design`
-3. `tasks`
-4. `apply`
-5. `archive`
+2. `apply`
+3. `archive`
+4. `explore`（可选，随时使用）
 
 建议这样理解：
 
-- `propose`：定义要解决的问题、目标与范围
-- `design`：补充实现方案、约束与取舍
-- `tasks`：把方案拆成可执行任务
+- `propose`：创建 change，并生成 proposal / specs / design / tasks
 - `apply`：按任务推进实现并回写状态
 - `archive`：在验证完成后归档这次变更
+- `explore`：只做需求澄清与方案探索，不实现功能
 
 ### 4. 选择使用入口
 
-常用入口有两类：
+常用入口：
 
-- **tools**：`openspec-init`、`openspec-propose`、`openspec-design`、`openspec-tasks`、`openspec-apply`、`openspec-archive`、`openspec-list`
-- **commands**：`/opsx-propose`、`/opsx-design`、`/opsx-tasks`、`/opsx-apply`、`/opsx-archive`、`/opsx-list`
+- **commands**：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`
+- **skills**：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive`
+- **reference scripts**：`.opencode/skills/<skill>/references/*.js`
 
 如果你希望：
 
-- **直接调用结构化工具**：优先用 tools
-- **让 Agent 按预设提示组织流程**：优先用 commands
+- **让 Agent 按预设提示组织流程**：优先用 commands / skills
+- **显式执行底层脚本**：直接用 reference scripts
 
 ### 5. 理解资源同步行为
 
@@ -90,10 +82,10 @@
 
 ## 运行原理
 
-这个插件的核心思路不是“把所有能力都动态注册进 OpenCode”，而是把 OpenSpec 工作流拆成两层：
+这个插件的核心思路不是“把所有能力都动态注册进 OpenCode”，而是通过文件同步把 OpenSpec 工作流资源接入项目：
 
-- **tools 由插件直接提供**：负责创建、更新和归档 OpenSpec 变更
-- **commands / skills / templates 由插件同步到项目目录**：再交给 OpenCode 原生发现机制接管
+- **commands / skills / templates 由插件同步到项目目录**
+- **reference scripts 由 skills 调用，直接操作 `openspec/` 目录结构**
 
 启动时插件会：
 
@@ -103,10 +95,7 @@
 4. 如果发现用户改过已同步文件，不强制覆盖，而是写入对应 `.new` 文件供人工合并
 5. 在会话创建时输出提示，告知是否发生同步、冲突以及是否建议重启
 
-这意味着：
-
-- **工具能力立即可用**
-- **commands / skills 的新增或升级依赖 OpenCode 原生扫描**，所以部分场景需要重启
+这意味着 commands / skills 的新增或升级依赖 OpenCode 原生扫描，所以部分场景需要重启。
 
 更详细的实现说明与限制见 [`docs/zh/architecture.md`](docs/zh/architecture.md)。
 

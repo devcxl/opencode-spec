@@ -2,13 +2,12 @@
 
 [返回 README](../../README.md) | [English](../en/architecture.md)
 
-`opencode-spec` 采用“插件直供 tools + 文件同步接入 commands / skills / templates”的方案，把 OpenSpec 工作流接入 OpenCode。
+`opencode-spec` 采用“插件负责同步资源文件，commands / skills 再通过 reference scripts 执行工作流”的方案，把 OpenSpec 工作流接入 OpenCode。
 
 ## 能力边界
 
 插件直接负责：
 
-- 注册 OpenSpec 相关 custom tools
 - 启动时同步资源文件
 - 在会话创建时输出同步提示
 
@@ -17,8 +16,9 @@
 - commands
 - skills
 - templates
+- reference scripts
 
-后面这三类能力不是通过插件动态注册，而是先写入项目 `.opencode/` 目录，再由 OpenCode 原生发现机制加载。
+这些能力都不是通过插件动态注册，而是先写入项目 `.opencode/` 目录，再由 OpenCode 原生发现机制加载或执行。
 
 ## 启动时同步流程
 
@@ -62,7 +62,7 @@
 - 已同步多少资源文件
 - 是否检测到用户改动并生成 `.new`
 - commands / skills 是否更新，因此是否建议重启 OpenCode
-- 推荐流程：`propose → design → tasks → apply → archive`
+- 推荐流程：`proposal → specs → design → tasks → apply → archive`
 
 ## 当前限制
 
@@ -73,4 +73,4 @@
 - 用 skill 与 command 模板承载流程约束
 - 用启动同步与会话提示补足引导能力
 
-这也是为什么 commands / skills 的接入方式依赖文件同步，而不是纯运行时注册。
+这也是为什么 commands / skills / reference scripts 的接入方式依赖文件同步，而不是纯运行时注册。

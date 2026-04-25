@@ -2,9 +2,9 @@
 
 [Back to README](../../README.en.md) | [中文](../zh/usage.md)
 
-This document describes the recommended way to use `opencode-spec`, both for first-time setup and day-to-day workflow.
+This document describes the recommended way to use `opencode-spec`.
 
-## 1. Install the plugin
+## 1. Install the Plugin
 
 Configure `opencode.json` in the project root:
 
@@ -15,75 +15,60 @@ Configure `opencode.json` in the project root:
 }
 ```
 
-After OpenCode starts, the plugin automatically syncs:
+## 2. Workflow
 
-- `.opencode/commands/opsx-*.md`
-- `.opencode/skills/openspec/SKILL.md`
-- `.opencode/opencode-spec/templates/*.md`
-
-If commands or skills are written for the first time, or upgraded, restarting OpenCode is recommended.
-
-## 2. Initialize the workspace
-
-When enabling OpenSpec in a project for the first time, use `openspec-init` to create the base directory and file structure.
-
-## 3. Follow the workflow
-
-Recommended order:
-
-1. `propose`
-2. `design`
-3. `tasks`
-4. `apply`
-5. `archive`
+```
+propose → apply → archive
+explore (optional, use anytime)
+```
 
 ### propose
 
-Define the goal, scope, and expected value of the change.
+Create change and generate proposal / specs / design / tasks.
 
-### design
+### explore
 
-Document the implementation plan, constraints, alternatives, and key tradeoffs.
-
-### tasks
-
-Break the design down into executable, verifiable, and traceable tasks.
+Explore problems, clarify requirements. No implementation.
 
 ### apply
 
-Update task state as implementation progresses.
+Implement tasks and mark them complete.
 
 ### archive
 
-Archive the change after implementation and verification are complete.
+Archive completed change.
 
-## 4. Choose tools or commands
+## 3. Entry Points
 
-### When tools are a better fit
+| Type | Entry | Description |
+|------|-------|-------------|
+| Command | `/opsx-propose` | Recommended starting point |
+| Command | `/opsx-explore` | Requirement exploration |
+| Command | `/opsx-apply` | Task implementation |
+| Command | `/opsx-archive` | Archive completed |
+| Skill | `openspec-propose` | Agent invokes directly |
+| Skill | `openspec-explore` | Agent invokes directly |
+| Skill | `openspec-apply` | Agent invokes directly |
+| Skill | `openspec-archive` | Agent invokes directly |
 
-- you want explicit parameter control
-- you already know which OpenSpec step to invoke
-- you prefer structured calls over conversational workflow prompts
+## 4. Built-in Reference Scripts
 
-### When commands are a better fit
+Each skill includes JavaScript scripts in `.opencode/skills/<skill-name>/references/`:
 
-- you want the agent to follow preset prompt guidance
-- you want to reuse the repository's workflow templates
-- you prefer a more conversational, prompt-driven style
+- `openspec-propose`: new-change.js, status.js, instructions.js
+- `openspec-explore`: list.js
+- `openspec-apply`: prepare-apply.js, mark-tasks.js
+- `openspec-archive`: archive.js
 
-## 5. Handle sync conflicts
+These scripts replace external openspec CLI and directly manipulate `openspec/` directory structure.
 
-If the plugin detects that a synced file was manually edited, it does not overwrite the file. Instead, it creates a sibling `.new` file.
+## 5. Handle Sync Conflicts
+
+If the plugin detects file edits, it creates `.new` file instead of overwriting.
 
 Recommended handling:
 
-1. compare the original file with the `.new` file
-2. merge the content you want to keep
-3. remove the `.new` file when it is no longer needed
-4. restart OpenCode if commands or skills were updated
-
-## 6. Practical suggestions
-
-- treat `propose → design → tasks` as the standard preparation stage before implementation
-- if you only change templates, focus on `.opencode/opencode-spec/templates`
-- if you change commands or skills, restart OpenCode first and then verify behavior
+1. compare original file with `.new` file
+2. merge content you want to keep
+3. remove `.new` file
+4. restart OpenCode if updated

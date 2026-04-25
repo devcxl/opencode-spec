@@ -2,7 +2,7 @@
 
 [返回 README](../../README.md) | [English](../en/usage.md)
 
-本文档给出 `opencode-spec` 的推荐使用方式，适合首次接入和日常使用时参考。
+本文档给出 `opencode-spec` 的推荐使用方式。
 
 ## 1. 安装插件
 
@@ -15,75 +15,60 @@
 }
 ```
 
-启动 OpenCode 后，插件会自动同步：
+## 2. 工作流
 
-- `.opencode/commands/opsx-*.md`
-- `.opencode/skills/openspec/SKILL.md`
-- `.opencode/opencode-spec/templates/*.md`
-
-如果 commands 或 skills 首次写入，或发生升级，建议重启 OpenCode。
-
-## 2. 初始化目录结构
-
-首次在项目中启用 OpenSpec 时，先使用 `openspec-init` 创建基础目录和文件结构。
-
-## 3. 按工作流推进
-
-推荐顺序：
-
-1. `propose`
-2. `design`
-3. `tasks`
-4. `apply`
-5. `archive`
+```
+propose → apply → archive
+explore（可选，随时使用）
+```
 
 ### propose
 
-用于定义本次变更的目标、边界和预期收益。
+创建 change 并生成 proposal / specs / design / tasks。
 
-### design
+### explore
 
-用于记录实现方案、约束、替代方案和关键取舍。
-
-### tasks
-
-用于把设计拆成一组可执行、可验证、可追踪的任务。
+探索问题、澄清需求。不实现任何功能。
 
 ### apply
 
-用于在执行实现后回写任务状态，持续维护变更进度。
+按 tasks 执行实现，完成后标记任务完成。
 
 ### archive
 
-用于在实现和验证都完成之后归档本次变更。
+归档已完成的 change。
 
-## 4. 选择 tools 还是 commands
+## 3. 入口选择
 
-### 适合使用 tools 的场景
+| 类型 | 入口 | 说明 |
+|------|------|------|
+| Command | `/opsx-propose` | 推荐起始点 |
+| Command | `/opsx-explore` | 需求探索 |
+| Command | `/opsx-apply` | 任务执行 |
+| Command | `/opsx-archive` | 归档完成 |
+| Skill | `openspec-propose` | Agent 直接调用 |
+| Skill | `openspec-explore` | Agent 直接调用 |
+| Skill | `openspec-apply` | Agent 直接调用 |
+| Skill | `openspec-archive` | Agent 直接调用 |
 
-- 你希望明确控制输入参数
-- 你已经知道要调用哪个 OpenSpec 步骤
-- 你更偏向结构化调用而不是对话式工作流
+## 4. 内置参考脚本
 
-### 适合使用 commands 的场景
+每个 skill 内置 JavaScript 脚本，位于 `.opencode/skills/<skill-name>/references/`：
 
-- 你希望 Agent 按预设提示组织输出
-- 你希望沿用仓库内已有流程模板
-- 你更偏向对话式、提示词驱动的工作方式
+- `openspec-propose`：new-change.js、status.js、instructions.js
+- `openspec-explore`：list.js
+- `openspec-apply`：prepare-apply.js、mark-tasks.js
+- `openspec-archive`：archive.js
+
+这些脚本替代外部 openspec CLI，直接操作 `openspec/` 目录结构。
 
 ## 5. 处理同步冲突
 
-如果插件检测到你手动改过已同步文件，它不会直接覆盖，而是生成 `.new` 文件。
+如果插件检测到文件被用户改过，不会覆盖，而是生成 `.new` 文件。
 
-建议处理方式：
+建议：
 
 1. 对比原文件与 `.new` 文件
-2. 合并你需要保留的内容
-3. 删除不再需要的 `.new` 文件
-4. 如 commands / skills 有更新，重启 OpenCode
-
-## 6. 常见建议
-
-- 把 `propose → design → tasks` 作为进入实现前的固定准备动作
-- 如果只改模板，可重点检查 `.opencode/opencode-spec/templates`
-- 如果只改 commands 或 skills，同步后优先重启 OpenCode 再验证
+2. 合并需要保留的内容
+3. 删除 `.new` 文件
+4. 如有更新，重启 OpenCode
