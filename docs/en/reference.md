@@ -35,4 +35,8 @@ On startup, the plugin syncs:
 - `assets/skills/*` → `.opencode/skills/*`
 - `assets/templates/*` → `.opencode/opencode-spec/templates/*`
 
+Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
+
+These reference scripts are invoked via project-root-relative paths under `.opencode/skills/**/references/*.js`.
+
 If skills are written for the first time or upgraded, restarting OpenCode is recommended.

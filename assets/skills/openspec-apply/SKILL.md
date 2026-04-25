@@ -15,13 +15,13 @@ Implement tasks from an OpenSpec change.
  If a name is provided, use it. Otherwise:
  - Infer from conversation context if the user mentioned a change
  - Auto-select if only one active change exists
- - If ambiguous, run `node .opencode/skills/openspec-explore/references/list.js --json` to get available changes and use the **AskUserQuestion tool** to let the user select
+  - If ambiguous, run `node .opencode/skills/openspec-explore/references/list.js` to get available changes and use the **question tool** to let the user select
 
  Always announce: "Using change: <name>" and how to override (e.g., `/opsx-apply <name>`).
 
 2. **Check status to understand the schema**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>" --json
+    node .opencode/skills/openspec-propose/references/status.js "<name>"
    ```
  Parse the JSON to understand:
  - `schemaName`: The workflow being used (e.g., "spec-driven")

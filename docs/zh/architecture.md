@@ -34,6 +34,10 @@
 - `.opencode/skills`
 - `.opencode/opencode-spec/templates`
 
+前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
+
+同步后的 commands / skills 会通过项目根下的相对路径 `.opencode/skills/**/references/*.js` 调用 reference scripts。
+
 同步时会执行以下策略：
 
 1. **目标文件不存在**：直接写入

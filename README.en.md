@@ -29,6 +29,10 @@ Add to `opencode.json` at project root:
 }
 ```
 
+Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
+
+Reason: synced skills / commands invoke project-local `.opencode/skills/**/references/*.js` scripts.
+
 ## Workflow
 
 ```

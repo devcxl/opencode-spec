@@ -29,6 +29,10 @@
 }
 ```
 
+前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
+
+原因：同步后的 skills / commands 会调用项目内 `.opencode/skills/**/references/*.js` 脚本。
+
 ## 工作流
 
 ```

@@ -34,6 +34,10 @@ It then syncs them into:
 - `.opencode/skills`
 - `.opencode/opencode-spec/templates`
 
+Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
+
+Synced commands / skills invoke reference scripts via project-root-relative paths under `.opencode/skills/**/references/*.js`.
+
 The sync strategy is:
 
 1. **target file does not exist**: write it directly

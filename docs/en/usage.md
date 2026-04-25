@@ -15,6 +15,10 @@ Configure `opencode.json` in the project root:
 }
 ```
 
+Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
+
+Reason: skills / commands invoke Node scripts synced into `.opencode/skills/**/references/*.js`.
+
 ## 2. Workflow
 
 ```

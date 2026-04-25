@@ -35,4 +35,8 @@ explore（可选，随时使用）
 - `assets/skills/*` → `.opencode/skills/*`
 - `assets/templates/*` → `.opencode/opencode-spec/templates/*`
 
+前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
+
+这些 reference scripts 通过项目根下的相对路径 `.opencode/skills/**/references/*.js` 调用。
+
 如果 skills 首次写入或发生升级，建议重启 OpenCode。

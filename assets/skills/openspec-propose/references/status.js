@@ -5,7 +5,7 @@ const name = process.argv[2]
 
 await runJsonCli(async () => {
   if (!name) {
-    throw new Error("Usage: status <name> [--json]")
+    throw new Error("Usage: status <name>")
   }
 
   return getChangeStatus(undefined, name)

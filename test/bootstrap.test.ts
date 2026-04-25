@@ -1,11 +1,14 @@
+import { execFile } from "node:child_process"
 import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { promisify } from "node:util"
 
 import { afterEach, describe, expect, it } from "vitest"
 
 import { syncAssets } from "../src/bootstrap/sync-assets.ts"
 
+const execFileAsync = promisify(execFile)
 const tempDirs: string[] = []
 
 afterEach(async () => {
@@ -137,5 +140,47 @@ describe("syncAssets", () => {
     expect(result.conflicts).toContain("commands/opsx-propose.md")
     await expect(readFile(commandPath, "utf8")).resolves.toBe("user customized command")
     expect(await exists(commandPath)).toBe(true)
+  })
+
+  it("同步后的 skill 脚本命令应保留项目内相对路径，并可在项目根执行", async () => {
+    const packageRoot = path.resolve(__dirname, "..")
+    const projectDir = await makeTempDir("opencode spec project-")
+
+    await syncAssets({ projectDir, packageRoot })
+
+    const skillPath = path.join(projectDir, ".opencode", "skills", "openspec-explore", "SKILL.md")
+    const skillContent = await readFile(skillPath, "utf8")
+    const commandLine = skillContent
+      .split(/\r?\n/)
+      .find((line) => line.includes("openspec-explore/references/list.js"))
+
+    expect(commandLine).toBeTruthy()
+    expect(commandLine).toContain("node .opencode/skills/")
+    expect(commandLine).not.toContain(projectDir)
+
+    const { stdout } = await execFileAsync("bash", ["-lc", commandLine!], { cwd: projectDir })
+
+    expect(JSON.parse(stdout)).toEqual({ active: [], archived: [] })
+  })
+
+  it("同步后的 command 脚本命令应保留项目内相对路径", async () => {
+    const packageRoot = path.resolve(__dirname, "..")
+    const projectDir = await makeTempDir("opencode-spec-project-")
+
+    await syncAssets({ projectDir, packageRoot })
+
+    const commandPath = path.join(projectDir, ".opencode", "commands", "opsx-propose.md")
+    const commandContent = await readFile(commandPath, "utf8")
+    const newChangeCommand = commandContent
+      .split(/\r?\n/)
+      .find((line) => line.includes("openspec-propose/references/new-change.js"))
+
+    expect(commandContent).toContain("node .opencode/skills/")
+    expect(commandContent).not.toContain(projectDir)
+    expect(newChangeCommand).toBeTruthy()
+
+    await execFileAsync("bash", ["-lc", newChangeCommand!.replaceAll("$ARGUMENTS", "Command Demo")], { cwd: projectDir })
+
+    expect(await exists(path.join(projectDir, "openspec", "changes", "command-demo", ".openspec.yaml"))).toBe(true)
   })
 })

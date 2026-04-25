@@ -6,7 +6,7 @@ const name = getArgValue("--change")
 
 await runJsonCli(async () => {
   if (!artifactId || !name) {
-    throw new Error("Usage: instructions <artifact-id> --change=<name> [--json]")
+    throw new Error("Usage: instructions <artifact-id> --change=<name>")
   }
 
   return getArtifactInstructions(undefined, name, artifactId)

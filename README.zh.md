@@ -23,6 +23,10 @@
 }
 ```
 
+前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
+
+原因：同步后的 skills / commands 会调用项目内 `.opencode/skills/**/references/*.js` 脚本。
+
 启动 OpenCode 后，插件会自动同步以下资源：
 
 - `.opencode/commands/opsx-*.md`

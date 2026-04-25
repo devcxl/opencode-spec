@@ -75,7 +75,7 @@ describe("reference scripts", () => {
     expect(created.slug).toBe("demo-change")
     expect(await exists(path.join(projectDir, "openspec", "changes", "demo-change", ".openspec.yaml"))).toBe(true)
 
-    const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["demo-change", "--json"])
+    const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["demo-change"])
     expect(status.slug).toBe("demo-change")
     expect((status.artifacts as Array<{ id: string; state: string }>).find((artifact) => artifact.id === "proposal")?.state).toBe("ready")
   })

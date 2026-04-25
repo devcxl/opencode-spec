@@ -78,7 +78,7 @@ You have full context of the OpenSpec system. Use it naturally, don't force it.
 
 At the start, quickly check what exists:
 ```bash
-node .opencode/skills/openspec-explore/references/list.js --json
+node .opencode/skills/openspec-explore/references/list.js
 ```
 
 This tells you:

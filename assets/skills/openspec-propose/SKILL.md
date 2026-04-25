@@ -21,7 +21,7 @@ When ready to implement, run /opsx-apply
 
 1. **If no clear input provided, ask what they want to build**
 
- Use the **AskUserQuestion tool** (open-ended, no preset options) to ask:
+ Use the **question tool** (open-ended, no preset options) to ask:
  > "What change do you want to work on? Describe what you want to build or fix."
 
  From their description, derive a kebab-case name (e.g., "add user authentication" → `add-user-auth`).
@@ -36,7 +36,7 @@ When ready to implement, run /opsx-apply
 
 3. **Get the artifact build order**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>" --json
+   node .opencode/skills/openspec-propose/references/status.js "<name>"
    ```
  Parse the JSON to get:
  - `applyRequires`: array of artifact IDs needed before implementation (e.g., `["tasks"]`)
@@ -44,14 +44,14 @@ When ready to implement, run /opsx-apply
 
 4. **Create artifacts in sequence until apply-ready**
 
- Use the **TodoWrite tool** to track progress through the artifacts.
+ Use the **todowrite tool** to track progress through the artifacts.
 
  Loop through artifacts in dependency order (artifacts with no pending dependencies first):
 
  a. **For each artifact that is `ready` (dependencies satisfied)**:
  - Get instructions:
         ```bash
-        node .opencode/skills/openspec-propose/references/instructions.js <artifact-id> --change="<name>" --json
+        node .opencode/skills/openspec-propose/references/instructions.js <artifact-id> --change="<name>"
         ```
  - The instructions JSON includes:
    - `context`: Project background (constraints for you - do NOT include in output)
@@ -66,12 +66,12 @@ When ready to implement, run /opsx-apply
  - Show brief progress: "Created <artifact>"
 
  b. **Continue until all `applyRequires` artifacts are complete**
- - After creating each artifact, re-run `node .opencode/skills/openspec-propose/references/status.js "<name>" --json`
+  - After creating each artifact, re-run `node .opencode/skills/openspec-propose/references/status.js "<name>"`
  - Check if every artifact ID in `applyRequires` has `status: "done"` in the artifacts array
  - Stop when all `applyRequires` artifacts are done
 
  c. **If an artifact requires user input** (unclear context):
- - Use **AskUserQuestion tool** to clarify
+  - Use the **question tool** to clarify
  - Then continue with creation
 
 5. **Show final status**

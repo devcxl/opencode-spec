@@ -12,7 +12,7 @@ Archive a completed change in the OpenSpec workflow.
 
 1. **If no change name provided, prompt for selection**
 
- Run `node .opencode/skills/openspec-explore/references/list.js --json` to get available changes. Use the **AskUserQuestion tool** to let the user select.
+ Run `node .opencode/skills/openspec-explore/references/list.js` to get available changes. Use the **question tool** to let the user select.
 
  Show only active changes (not already archived).
  Include the schema used for each change if available.
@@ -21,7 +21,7 @@ Archive a completed change in the OpenSpec workflow.
 
 2. **Check artifact completion status**
 
- Run `node .opencode/skills/openspec-propose/references/status.js "<name>" --json` to check artifact completion.
+ Run `node .opencode/skills/openspec-propose/references/status.js "<name>"` to check artifact completion.
 
  Parse the JSON to understand:
  - `schemaName`: The workflow being used
@@ -29,7 +29,7 @@ Archive a completed change in the OpenSpec workflow.
 
  **If any artifacts are not `done`:**
  - Display warning listing incomplete artifacts
- - Use **AskUserQuestion tool** to confirm user wants to proceed
+  - Use the **question tool** to confirm user wants to proceed
  - Proceed if user confirms
 
 3. **Check task completion status**
@@ -40,7 +40,7 @@ Archive a completed change in the OpenSpec workflow.
 
  **If incomplete tasks found:**
  - Display warning showing count of incomplete tasks
- - Use **AskUserQuestion tool** to confirm user wants to proceed
+  - Use the **question tool** to confirm user wants to proceed
  - Proceed if user confirms
 
  **If no tasks file exists:** Proceed without task-related warning.
