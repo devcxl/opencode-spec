@@ -38,7 +38,7 @@ async function createWorkspace() {
   await mkdir(path.join(skillRoot, "openspec-explore", "references"), { recursive: true })
   await mkdir(path.join(skillRoot, "_shared", "references"), { recursive: true })
 
-  const repoRoot = "/home/devcxl/Projects/OpenCodePlugins/opencode-spec"
+  const repoRoot = path.resolve(__dirname, "..")
   const files = [
     ["assets/skills/package.json", ".opencode/skills/package.json"],
     ["assets/skills/_shared/references/openspec.js", ".opencode/skills/_shared/references/openspec.js"],
