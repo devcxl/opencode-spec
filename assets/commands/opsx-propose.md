@@ -1,15 +1,20 @@
 ---
-description: 创建 OpenSpec proposal
+description: 快速创建 OpenSpec planning artifacts
 agent: build
 ---
 
-为变更 `$ARGUMENTS` 创建新的 OpenSpec change。
+为变更 `$ARGUMENTS` 快速创建新的 OpenSpec change 与全部 planning artifacts。
 
-先调用工具 `openspec-propose`：
-- name: $ARGUMENTS
+执行：
+
+```bash
+node .opencode/skills/openspec-propose/references/new-change.js "$ARGUMENTS"
+node .opencode/skills/openspec-propose/references/status.js "$ARGUMENTS" --json
+```
 
 然后：
-1. 阅读生成的 `proposal.md`、`design.md`、`tasks.md`、`specs/spec.md`
-2. 结合仓库上下文补全 proposal、design、tasks
-3. 保持 proposal / design / tasks / spec 一致
-4. 对非 trivial 变更，不要跳过 proposal、design、tasks 直接实现
+1. 按 status 返回的依赖顺序逐个生成 artifact
+2. 每个待生成 artifact 先执行 `node .opencode/skills/openspec-propose/references/instructions.js <artifact-id> --change="$ARGUMENTS" --json`
+3. 阅读依赖文件后补全 `proposal.md`、`specs/*.md`、`design.md`、`tasks.md`
+4. 保持 proposal / specs / design / tasks 一致
+5. 对非 trivial 变更，不要跳过这些 planning artifacts 直接实现

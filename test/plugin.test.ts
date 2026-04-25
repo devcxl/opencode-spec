@@ -1,16 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-const { syncAssets, createOpenSpecTools } = vi.hoisted(() => ({
+const { syncAssets } = vi.hoisted(() => ({
   syncAssets: vi.fn(),
-  createOpenSpecTools: vi.fn(() => ({})),
 }))
 
 vi.mock("../src/bootstrap/sync-assets.js", () => ({
   syncAssets,
-}))
-
-vi.mock("../src/tools/index.js", () => ({
-  createOpenSpecTools,
 }))
 
 import { buildSessionNotice } from "../src/bootstrap/inject-context.js"
@@ -34,11 +29,11 @@ describe("buildSessionNotice", () => {
       }),
     ).toEqual({
       duration: 8000,
-      title: "opencode-spec",
-      message:
-        "OpenSpec 工作流已启用；已同步 1 个资源文件；检测到 1 个用户修改文件，已写入 .new 供人工合并；commands/skills 已更新，建议重启 OpenCode 以重新发现；推荐流程：propose → design → tasks → apply → archive",
-      variant: "warning",
-    })
+        title: "opencode-spec",
+        message:
+          "OpenSpec 工作流已启用；已同步 1 个资源文件；检测到 1 个用户修改文件，已写入 .new 供人工合并；commands/skills 已更新，建议重启 OpenCode 以重新发现；推荐流程：proposal → specs → design → tasks → apply → archive",
+        variant: "warning",
+      })
   })
 })
 
@@ -78,7 +73,7 @@ describe("OpencodeSpec", () => {
         duration: 6000,
         title: "opencode-spec",
         message:
-          "OpenSpec 工作流已启用；已同步 1 个资源文件；commands/skills 已更新，建议重启 OpenCode 以重新发现；推荐流程：propose → design → tasks → apply → archive",
+          "OpenSpec 工作流已启用；已同步 1 个资源文件；commands/skills 已更新，建议重启 OpenCode 以重新发现；推荐流程：proposal → specs → design → tasks → apply → archive",
         variant: "info",
       },
     })
@@ -131,7 +126,7 @@ describe("OpencodeSpec", () => {
       body: {
         service: "opencode-spec",
         level: "info",
-        message: "OpenSpec 工作流已启用；已同步 1 个资源文件；推荐流程：propose → design → tasks → apply → archive",
+        message: "OpenSpec 工作流已启用；已同步 1 个资源文件；推荐流程：proposal → specs → design → tasks → apply → archive",
         extra: {
           duration: 4000,
           title: "opencode-spec",

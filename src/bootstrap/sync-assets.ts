@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { readdir, readFile, writeFile } from "node:fs/promises"
+import { readdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 
 import { ensureParentDir, pathExists, readOptionalText } from "../core/common.js"
@@ -146,6 +146,38 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
       if (previous) {
         nextFiles[manifestKey] = previous
       }
+    }
+  }
+
+  for (const [manifestKey, previous] of Object.entries(manifest?.files ?? {})) {
+    if (manifestKey in nextFiles) {
+      continue
+    }
+
+    const targetPath = path.join(input.projectDir, previous.target)
+    const currentContent = await readOptionalText(targetPath)
+    const currentHash = currentContent ? hashContent(currentContent) : null
+
+    if (currentContent !== null && previous.hash === currentHash) {
+      await rm(targetPath, { force: true, recursive: true })
+      changed = true
+      writtenFiles.push(previous.target)
+
+      const newFilePath = `${targetPath}.new`
+      if (await pathExists(newFilePath)) {
+        await rm(newFilePath, { force: true, recursive: true })
+        writtenFiles.push(`${previous.target}.new`)
+      }
+
+      requiresRestart ||= manifestKey.startsWith("commands/") || manifestKey.startsWith("skills/")
+      continue
+    }
+
+    if (currentContent !== null) {
+      changed = true
+      conflicts.push(manifestKey)
+      skippedFiles.push(manifestKey)
+      nextFiles[manifestKey] = previous
     }
   }
 

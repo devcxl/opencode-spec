@@ -105,4 +105,37 @@ describe("syncAssets", () => {
     await expect(readFile(`${commandPath}.new`, "utf8")).resolves.toBe("updated command")
     expect(await exists(`${commandPath}.new`)).toBe(true)
   })
+
+  it("插件删除已同步资源时会清理未被用户修改的旧文件", async () => {
+    const packageRoot = await createPackageRoot("0.1.0")
+    const projectDir = await makeTempDir("opencode-spec-project-")
+
+    await syncAssets({ projectDir, packageRoot })
+    await rm(path.join(packageRoot, "assets", "commands", "opsx-propose.md"))
+    await writeFile(path.join(packageRoot, "package.json"), JSON.stringify({ version: "0.2.0" }, null, 2))
+
+    const result = await syncAssets({ projectDir, packageRoot })
+
+    expect(result.changed).toBe(true)
+    expect(result.requiresRestart).toBe(true)
+    expect(await exists(path.join(projectDir, ".opencode", "commands", "opsx-propose.md"))).toBe(false)
+  })
+
+  it("插件删除资源时，若目标已被用户修改则保留原文件并记录冲突", async () => {
+    const packageRoot = await createPackageRoot("0.1.0")
+    const projectDir = await makeTempDir("opencode-spec-project-")
+
+    await syncAssets({ projectDir, packageRoot })
+    const commandPath = path.join(projectDir, ".opencode", "commands", "opsx-propose.md")
+    await writeFile(commandPath, "user customized command")
+    await rm(path.join(packageRoot, "assets", "commands", "opsx-propose.md"))
+    await writeFile(path.join(packageRoot, "package.json"), JSON.stringify({ version: "0.2.0" }, null, 2))
+
+    const result = await syncAssets({ projectDir, packageRoot })
+
+    expect(result.changed).toBe(true)
+    expect(result.conflicts).toContain("commands/opsx-propose.md")
+    await expect(readFile(commandPath, "utf8")).resolves.toBe("user customized command")
+    expect(await exists(commandPath)).toBe(true)
+  })
 })

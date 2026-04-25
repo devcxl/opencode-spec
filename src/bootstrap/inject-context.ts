@@ -24,7 +24,7 @@ export function buildSessionNotice(result: SyncAssetsResult) {
     parts.push("commands/skills 已更新，建议重启 OpenCode 以重新发现")
   }
 
-  parts.push("推荐流程：propose → design → tasks → apply → archive")
+  parts.push("推荐流程：proposal → specs → design → tasks → apply → archive")
 
   const variant = result.conflicts.length > 0 ? "warning" : result.requiresRestart ? "info" : "success"
 

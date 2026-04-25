@@ -4,9 +4,12 @@ import { fileURLToPath } from "node:url"
 
 import { buildSessionNotice } from "./bootstrap/inject-context.js"
 import { syncAssets } from "./bootstrap/sync-assets.js"
-import { createOpenSpecTools } from "./tools/index.js"
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+export function resolvePackageRoot(metaUrl: string) {
+  return path.resolve(path.dirname(fileURLToPath(metaUrl)), "..")
+}
+
+const packageRoot = resolvePackageRoot(import.meta.url)
 
 export const OpencodeSpec: Plugin = async (ctx) => {
   const projectDir = ctx.worktree || ctx.directory
@@ -55,6 +58,5 @@ export const OpencodeSpec: Plugin = async (ctx) => {
         })
       }
     },
-    tool: createOpenSpecTools(),
   }
 }
