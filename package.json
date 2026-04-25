@@ -1,6 +1,6 @@
 {
   "name": "@devcxl/opencode-spec",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "description": "OpenSpec workflow plugin for OpenCode",
   "repository": {
     "type": "git",
