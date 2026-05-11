@@ -6,9 +6,11 @@ import { ensureParentDir, pathExists, readOptionalText } from "../core/common.js
 import { createManifest, readManifest, writeManifest } from "./manifest.js"
 import type { AssetManifestFile } from "./manifest.js"
 
-const ASSET_KINDS = ["commands", "skills", "templates"] as const
+const ASSET_KINDS = ["skills", "templates"] as const
 
 type AssetKind = (typeof ASSET_KINDS)[number]
+
+const SKIP_SKILL_EXTENSIONS = [".md"]
 
 export interface SyncAssetsInput {
   packageRoot: string
@@ -18,7 +20,6 @@ export interface SyncAssetsInput {
 export interface SyncAssetsResult {
   changed: boolean
   conflicts: string[]
-  requiresRestart: boolean
   skippedFiles: string[]
   version: string
   writtenFiles: string[]
@@ -50,10 +51,6 @@ async function listFilesRecursive(rootDir: string, currentDir = rootDir): Promis
 }
 
 function getTargetPath(projectDir: string, kind: AssetKind, relativePath: string) {
-  if (kind === "commands") {
-    return path.join(projectDir, ".opencode", "commands", relativePath)
-  }
-
   if (kind === "skills") {
     return path.join(projectDir, ".opencode", "skills", relativePath)
   }
@@ -72,7 +69,6 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
   const version = await readPluginVersion(input.packageRoot)
 
   let changed = false
-  let requiresRestart = false
   const writtenFiles: string[] = []
   const skippedFiles: string[] = []
   const conflicts: string[] = []
@@ -83,6 +79,11 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
     const files = await listFilesRecursive(sourceRoot)
 
     for (const relativePath of files) {
+      if (kind === "skills") {
+        const ext = path.extname(relativePath)
+        if (SKIP_SKILL_EXTENSIONS.includes(ext) || ext === ".json") continue
+      }
+
       const manifestKey = `${kind}/${relativePath}`
       const sourcePath = path.join(sourceRoot, relativePath)
       const targetPath = getTargetPath(input.projectDir, kind, relativePath)
@@ -100,10 +101,6 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
         nextFiles[manifestKey] = {
           hash: sourceHash,
           target: path.relative(input.projectDir, targetPath).replace(/\\/g, "/"),
-        }
-
-        if (kind !== "templates") {
-          requiresRestart = true
         }
         continue
       }
@@ -123,10 +120,6 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
         nextFiles[manifestKey] = {
           hash: sourceHash,
           target: path.relative(input.projectDir, targetPath).replace(/\\/g, "/"),
-        }
-
-        if (kind !== "templates") {
-          requiresRestart = true
         }
         continue
       }
@@ -169,7 +162,6 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
         writtenFiles.push(`${previous.target}.new`)
       }
 
-      requiresRestart ||= manifestKey.startsWith("commands/") || manifestKey.startsWith("skills/")
       continue
     }
 
@@ -192,7 +184,6 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
   return {
     changed,
     conflicts,
-    requiresRestart,
     skippedFiles,
     version,
     writtenFiles,
