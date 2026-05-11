@@ -24,13 +24,23 @@ async function writeChangeFile(projectDir: string, slug: string, relativePath: s
   await writeFile(filePath, content, "utf8")
 }
 
+function proposalContent(slug: string) {
+  return `---
+slug: "${slug}"
+createdAt: "2026-01-01T00:00:00.000Z"
+---
+
+# Proposal
+`
+}
+
 describe("OpenSpec change status", () => {
   it("只有 proposal 时 specs 和 design 为 ready，tasks 为 blocked", async () => {
     const projectDir = await makeTempDir("opencode-spec-status-")
     const slug = "status-proposal-only"
 
     await initializeOpenSpec({ projectDir })
-    await writeChangeFile(projectDir, slug, "proposal.md", "# Proposal\n")
+    await writeChangeFile(projectDir, slug, "proposal.md", proposalContent(slug))
 
     await expect(getArtifactStatus(projectDir, slug, "proposal")).resolves.toMatchObject({ state: "done" })
     await expect(getArtifactStatus(projectDir, slug, "specs")).resolves.toMatchObject({ state: "ready" })
@@ -46,7 +56,7 @@ describe("OpenSpec change status", () => {
     const slug = "status-ready-tasks"
 
     await initializeOpenSpec({ projectDir })
-    await writeChangeFile(projectDir, slug, "proposal.md", "# Proposal\n")
+    await writeChangeFile(projectDir, slug, "proposal.md", proposalContent(slug))
     await writeChangeFile(projectDir, slug, "design.md", "# Design\n")
     await writeChangeFile(projectDir, slug, "specs/spec.md", "# Spec\n")
 
@@ -61,7 +71,7 @@ describe("OpenSpec change status", () => {
     const slug = "status-all-done"
 
     await initializeOpenSpec({ projectDir })
-    await writeChangeFile(projectDir, slug, "proposal.md", "# Proposal\n")
+    await writeChangeFile(projectDir, slug, "proposal.md", proposalContent(slug))
     await writeChangeFile(projectDir, slug, "design.md", "# Design\n")
     await writeChangeFile(projectDir, slug, "tasks.md", "# Tasks\n")
     await writeChangeFile(projectDir, slug, "specs/spec.md", "# Spec\n")

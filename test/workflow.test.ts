@@ -43,20 +43,18 @@ describe("OpenSpec P1 workflow", () => {
     const result = await createChangeScaffold({ projectDir, name: "Add Workflow" })
 
     expect(result.slug).toBe("add-workflow")
-    expect(await exists(path.join(projectDir, "openspec", "changes", "add-workflow", ".openspec.yaml"))).toBe(true)
-    expect(await exists(path.join(projectDir, "openspec", "changes", "add-workflow", "proposal.md"))).toBe(false)
+    expect(await exists(path.join(projectDir, "openspec", "changes", "add-workflow", "proposal.md"))).toBe(true)
 
     const status = await getChangeStatus(projectDir, result.slug)
-    expect(status.artifacts.find((artifact) => artifact.id === "proposal")?.state).toBe("ready")
+    expect(status.artifacts.find((artifact) => artifact.id === "proposal")?.state).toBe("done")
   })
 
-  it("continue 会按 proposal -> specs -> design -> tasks 顺序推进", async () => {
+  it("continue 会按 specs -> design -> tasks 顺序推进", async () => {
     const projectDir = await makeTempDir("opencode-spec-workflow-")
 
     await initializeOpenSpec({ projectDir })
     const scaffold = await createChangeScaffold({ projectDir, name: "Step By Step" })
 
-    expect((await continueChange({ projectDir, name: scaffold.slug })).nextArtifact).toBe("proposal")
     expect((await continueChange({ projectDir, name: scaffold.slug })).nextArtifact).toBe("specs")
     expect((await continueChange({ projectDir, name: scaffold.slug })).nextArtifact).toBe("design")
     expect((await continueChange({ projectDir, name: scaffold.slug })).nextArtifact).toBe("tasks")
@@ -71,7 +69,7 @@ describe("OpenSpec P1 workflow", () => {
     const scaffold = await createChangeScaffold({ projectDir, name: "Fast Forward" })
     const result = await fastForwardChange({ projectDir, name: scaffold.slug })
 
-    expect(result.createdArtifacts.map((artifact) => artifact.artifact)).toEqual(["proposal", "specs", "design", "tasks"])
+    expect(result.createdArtifacts.map((artifact) => artifact.artifact)).toEqual(["specs", "design", "tasks"])
     expect(await exists(path.join(projectDir, "openspec", "changes", "fast-forward", "proposal.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "fast-forward", "specs", "spec.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "fast-forward", "design.md"))).toBe(true)
@@ -83,7 +81,6 @@ describe("OpenSpec P1 workflow", () => {
 
     await initializeOpenSpec({ projectDir })
     const scaffold = await createChangeScaffold({ projectDir, name: "Instruction Change" })
-    await continueChange({ projectDir, name: scaffold.slug })
 
     const instructions = await getArtifactInstructions({ projectDir, name: scaffold.slug, artifact: "specs" })
     expect(instructions.state).toBe("ready")

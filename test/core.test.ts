@@ -54,12 +54,16 @@ describe("OpenSpec core workflow", () => {
 
     expect(proposed.slug).toBe("add-dark-mode")
     expect(proposed.schema).toBe("spec-driven")
-    expect(proposed.metaPath).toBe("openspec/changes/add-dark-mode/.openspec.yaml")
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "proposal.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "design.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "tasks.md"))).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", "specs", "spec.md"))).toBe(true)
-    expect(await exists(path.join(projectDir, "openspec", "changes", "add-dark-mode", ".openspec.yaml"))).toBe(true)
+
+    const initialProposalContent = await readFile(
+      path.join(projectDir, "openspec", "changes", "add-dark-mode", "proposal.md"),
+      "utf8",
+    )
+    expect(initialProposalContent).toMatch(/^---\nslug: "add-dark-mode"\ncreatedAt: ".+"\n---\n\n# Proposal: add-dark-mode/m)
 
     const initialTasksContent = await readFile(
       path.join(projectDir, "openspec", "changes", "add-dark-mode", "tasks.md"),

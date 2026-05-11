@@ -73,11 +73,10 @@ describe("reference scripts", () => {
 
     const created = await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Demo Change"])
     expect(created.slug).toBe("demo-change")
-    expect(await exists(path.join(projectDir, "openspec", "changes", "demo-change", ".openspec.yaml"))).toBe(true)
 
     const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["demo-change"])
     expect(status.slug).toBe("demo-change")
-    expect((status.artifacts as Array<{ id: string; state: string }>).find((artifact) => artifact.id === "proposal")?.state).toBe("ready")
+    expect((status.artifacts as Array<{ id: string; state: string }>).find((artifact) => artifact.id === "proposal")?.state).toBe("done")
   })
 
   it("mark-tasks 会按机器任务 ID 勾选正确任务，并写入验证说明", async () => {
@@ -85,7 +84,6 @@ describe("reference scripts", () => {
     await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Task Change"])
 
     const baseDir = path.join(projectDir, "openspec", "changes", "task-change")
-    await writeFile(path.join(baseDir, "proposal.md"), "# Proposal\n", "utf8")
     await writeFile(path.join(baseDir, "design.md"), "# Design\n", "utf8")
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Spec\n", "utf8")
     await writeFile(
@@ -113,7 +111,6 @@ describe("reference scripts", () => {
     await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Archive Change"])
 
     const baseDir = path.join(projectDir, "openspec", "changes", "archive-change")
-    await writeFile(path.join(baseDir, "proposal.md"), "# Proposal\n", "utf8")
     await writeFile(path.join(baseDir, "design.md"), "# Design\n", "utf8")
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Spec\n", "utf8")
     await writeFile(
