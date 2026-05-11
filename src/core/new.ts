@@ -1,9 +1,9 @@
 import { mkdir } from "node:fs/promises"
 
+import { formatProposalWithFrontmatter } from "./change.js"
 import { loadProjectConfig } from "./config.js"
-import { createChangeMeta, writeChangeMeta } from "./change.js"
-import { pathExists } from "./fs.js"
-import { changeDir, changeMetaPath, changeSpecsDir, ensureOpenSpecStructure, slugify, toRelativePath } from "./paths.js"
+import { pathExists, writeText } from "./fs.js"
+import { changeDir, changeSpecsDir, ensureOpenSpecStructure, proposalPath, slugify, toRelativePath } from "./paths.js"
 
 export interface CreateChangeScaffoldInput {
   projectDir: string
@@ -22,17 +22,11 @@ export async function createChangeScaffold(input: CreateChangeScaffoldInput) {
   const config = await loadProjectConfig(input.projectDir)
   const specsDir = changeSpecsDir(input.projectDir, slug)
   await mkdir(specsDir, { recursive: true })
-
-  const meta = createChangeMeta({
-    name: input.name,
-    slug,
-    schema: config.schema,
-  })
-  await writeChangeMeta(input.projectDir, slug, meta)
+  const targetProposalPath = proposalPath(input.projectDir, slug)
+  await writeText(targetProposalPath, formatProposalWithFrontmatter("", { slug, createdAt: new Date().toISOString() }))
 
   return {
-    created: [targetDir, specsDir, changeMetaPath(input.projectDir, slug)].map((filePath) => toRelativePath(input.projectDir, filePath)),
-    metaPath: toRelativePath(input.projectDir, changeMetaPath(input.projectDir, slug)),
+    created: [targetDir, specsDir, targetProposalPath].map((filePath) => toRelativePath(input.projectDir, filePath)),
     path: toRelativePath(input.projectDir, targetDir),
     schema: config.schema,
     slug,

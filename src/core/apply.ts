@@ -1,6 +1,5 @@
 import path from "node:path"
 
-import { touchChangeMeta } from "./change.js"
 import {
   appendVerificationNotes,
   changeDir,
@@ -41,7 +40,6 @@ export async function prepareApply(input: PrepareApplyInput) {
 
   if (nextContent !== current) {
     await writeText(filePath, nextContent)
-    await touchChangeMeta(input.projectDir, slug)
   }
 
   const tasks = parseTasks(nextContent)

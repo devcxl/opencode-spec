@@ -1,95 +1,114 @@
 import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
-
-import { parse, stringify } from "yaml"
+import { parse } from "yaml"
 
 import { loadProjectConfig } from "./config.js"
-import { pathExists, readOptionalText, writeText } from "./fs.js"
+import { pathExists, readOptionalText } from "./fs.js"
 import {
   archiveRoot,
   archiveChangeDir,
-  archivedChangeMetaPath,
   changeDir,
-  changeMetaPath,
-  changeMetaPathForDir,
   slugify,
 } from "./paths.js"
-import type { BuiltinSchemaName, ChangeMeta } from "./types.js"
+import type { ChangeMeta } from "./types.js"
 
 interface ChangeLocation {
   dirPath: string
-  metaPath: string
   slug: string
   status: "active" | "archived"
 }
 
+interface ProposalFrontmatter {
+  slug: string
+  createdAt: string
+}
+
+function formatYamlString(value: string) {
+  return JSON.stringify(value)
+}
+
+export function formatProposalWithFrontmatter(content: string, frontmatter: ProposalFrontmatter) {
+  const body = stripProposalFrontmatter(content)
+  return `---\nslug: ${formatYamlString(frontmatter.slug)}\ncreatedAt: ${formatYamlString(frontmatter.createdAt)}\n---\n\n${body}`
+}
+
+export function stripProposalFrontmatter(content: string) {
+  if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
+    return content
+  }
+
+  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/)
+  if (!match) {
+    throw new Error("proposal.md frontmatter 缺少结束分隔符 ---")
+  }
+
+  return content.slice(match[0].length).replace(/^\r?\n/, "")
+}
+
+export function parseProposalFrontmatter(content: string): ProposalFrontmatter {
+  if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
+    throw new Error("proposal.md 缺少 frontmatter")
+  }
+
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
+  if (!match) {
+    throw new Error("proposal.md frontmatter 缺少结束分隔符 ---")
+  }
+
+  const parsed = parse(match[1])
+  if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("proposal.md frontmatter 必须是对象")
+  }
+
+  const keys = Object.keys(parsed)
+  const extraKeys = keys.filter((key) => key !== "slug" && key !== "createdAt")
+  if (extraKeys.length > 0) {
+    throw new Error(`proposal.md frontmatter 只允许 slug 和 createdAt 字段：${extraKeys.join(", ")}`)
+  }
+
+  const { slug, createdAt } = parsed as Record<string, unknown>
+  if (typeof slug !== "string" || !slug.trim()) {
+    throw new Error("proposal.md frontmatter 缺少有效 slug")
+  }
+
+  if (typeof createdAt !== "string" || Number.isNaN(Date.parse(createdAt))) {
+    throw new Error("proposal.md frontmatter 缺少有效 createdAt")
+  }
+
+  return { slug, createdAt }
+}
+
+export async function readProposalFrontmatter(filePath: string): Promise<ProposalFrontmatter> {
+  const content = await readOptionalText(filePath)
+  if (content == null) {
+    throw new Error("未找到 proposal.md")
+  }
+
+  return parseProposalFrontmatter(content)
+}
+
 async function inferChangeMetaFromLocation(projectDir: string, slug: string, location: ChangeLocation): Promise<ChangeMeta> {
-  const directoryStats = await stat(location.dirPath)
   const schema = (await loadProjectConfig(projectDir)).schema
-  const createdAt = directoryStats.birthtime.toISOString()
-  const updatedAt = directoryStats.mtime.toISOString()
+  const targetProposalPath = path.join(location.dirPath, "proposal.md")
+  const proposalStats = await stat(targetProposalPath)
+  const frontmatter = await readProposalFrontmatter(targetProposalPath)
+  const archivedAt = location.status === "archived" ? (await stat(location.dirPath)).mtime.toISOString() : undefined
+
+  if (frontmatter.slug !== slug) {
+    throw new Error(`proposal.md frontmatter slug 与变更目录不一致：${frontmatter.slug} !== ${slug}`)
+  }
+
+  const updatedAt = proposalStats.mtime.toISOString()
 
   return {
     name: slug,
     slug,
     schema,
-    createdAt,
+    createdAt: frontmatter.createdAt,
     updatedAt,
-    ...(location.status === "archived" ? { archivedAt: updatedAt } : {}),
+    ...(archivedAt ? { archivedAt } : {}),
     status: location.status,
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function normalizeSchema(value: unknown): BuiltinSchemaName {
-  if (value == null || value === "") {
-    return "spec-driven"
-  }
-
-  if (value !== "spec-driven") {
-    throw new Error(`变更 metadata 指定了暂不支持的 schema：${String(value)}`)
-  }
-
-  return value
-}
-
-function normalizeTimestamp(value: unknown, fallback: string, fieldName: string) {
-  if (value == null || value === "") {
-    return fallback
-  }
-
-  if (typeof value !== "string") {
-    throw new Error(`变更 metadata 的 ${fieldName} 必须是字符串时间戳`)
-  }
-
-  return value
-}
-
-function normalizeOptionalTimestamp(value: unknown, fieldName: string) {
-  if (value == null || value === "") {
-    return undefined
-  }
-
-  if (typeof value !== "string") {
-    throw new Error(`变更 metadata 的 ${fieldName} 必须是字符串时间戳`)
-  }
-
-  return value
-}
-
-function normalizeStatus(value: unknown): ChangeMeta["status"] {
-  if (value == null || value === "") {
-    return undefined
-  }
-
-  if (value !== "active" && value !== "archived") {
-    throw new Error(`变更 metadata 的 status 不合法：${String(value)}`)
-  }
-
-  return value
 }
 
 async function resolveArchivedChangeLocation(projectDir: string, slug: string): Promise<ChangeLocation | null> {
@@ -97,30 +116,25 @@ async function resolveArchivedChangeLocation(projectDir: string, slug: string): 
   if (await pathExists(archivedDir)) {
     return {
       dirPath: archivedDir,
-      metaPath: archivedChangeMetaPath(projectDir, slug),
       slug,
       status: "archived",
     }
   }
 
-  const archivedRoot = archiveRoot(projectDir)
-  if (!(await pathExists(archivedRoot))) {
+  const archivedRootPath = archiveRoot(projectDir)
+  if (!(await pathExists(archivedRootPath))) {
     return null
   }
 
-  const entries = await readdir(archivedRoot, { withFileTypes: true })
+  const entries = await readdir(archivedRootPath, { withFileTypes: true })
   for (const entry of entries) {
     if (!entry.isDirectory()) {
       continue
     }
 
-    const dirPath = path.join(archivedRoot, entry.name)
-    const metaPath = changeMetaPathForDir(dirPath)
-    const meta = await readChangeMetaFromPath(metaPath)
-    if (meta?.slug === slug || entry.name === slug || entry.name.endsWith(`-${slug}`)) {
+    if (entry.name === slug || entry.name.endsWith(`-${slug}`)) {
       return {
-        dirPath,
-        metaPath,
+        dirPath: path.join(archivedRootPath, entry.name),
         slug,
         status: "archived",
       }
@@ -136,7 +150,6 @@ export async function resolveChangeLocation(projectDir: string, name: string): P
   if (await pathExists(activeDir)) {
     return {
       dirPath: activeDir,
-      metaPath: changeMetaPath(projectDir, slug),
       slug,
       status: "active",
     }
@@ -145,119 +158,14 @@ export async function resolveChangeLocation(projectDir: string, name: string): P
   return resolveArchivedChangeLocation(projectDir, slug)
 }
 
-async function readChangeMetaFromPath(filePath: string): Promise<ChangeMeta | null> {
-  const raw = await readOptionalText(filePath)
-  if (!raw?.trim()) {
-    return null
-  }
-
-  const parsed = parse(raw)
-  if (!isRecord(parsed)) {
-    throw new Error("变更 metadata 必须是对象")
-  }
-
-  const slug = typeof parsed.slug === "string" && parsed.slug.trim() ? slugify(parsed.slug) : undefined
-  if (!slug) {
-    throw new Error("变更 metadata 缺少 slug")
-  }
-
-  const name = typeof parsed.name === "string" && parsed.name.trim() ? parsed.name : slug
-  const createdAt = normalizeTimestamp(parsed.createdAt, new Date(0).toISOString(), "createdAt")
-  const updatedAt = normalizeTimestamp(parsed.updatedAt, createdAt, "updatedAt")
-
-  return {
-    name,
-    slug,
-    schema: normalizeSchema(parsed.schema),
-    createdAt,
-    updatedAt,
-    archivedAt: normalizeOptionalTimestamp(parsed.archivedAt, "archivedAt"),
-    status: normalizeStatus(parsed.status),
-  }
-}
-
-export function createChangeMeta(input: {
-  name: string
-  slug: string
-  schema?: BuiltinSchemaName
-  now?: Date
-}): ChangeMeta {
-  const timestamp = (input.now ?? new Date()).toISOString()
-  return {
-    name: input.name,
-    slug: slugify(input.slug),
-    schema: input.schema ?? "spec-driven",
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    status: "active",
-  }
-}
-
-export async function readChangeMeta(projectDir: string, name: string): Promise<ChangeMeta | null> {
-  const location = await resolveChangeLocation(projectDir, name)
-  if (!location) {
-    return null
-  }
-
-  const meta = await readChangeMetaFromPath(location.metaPath)
-  if (!meta) {
-    return null
-  }
-
-  return {
-    ...meta,
-    status: location.status,
-  }
-}
-
-export async function writeChangeMeta(
-  projectDir: string,
-  name: string,
-  meta: ChangeMeta,
-  options?: { archived?: boolean },
-) {
-  const filePath = options?.archived ? archivedChangeMetaPath(projectDir, name) : changeMetaPath(projectDir, name)
-  await writeText(filePath, stringify(meta))
-}
-
 export async function resolveChangeMeta(projectDir: string, name: string): Promise<ChangeMeta> {
   const slug = slugify(name)
-  const existing = await readChangeMeta(projectDir, slug)
-  if (existing) {
-    return existing
-  }
-
   const location = await resolveChangeLocation(projectDir, slug)
   if (!location) {
     throw new Error(`未找到变更 ${slug}`)
   }
 
   return inferChangeMetaFromLocation(projectDir, slug, location)
-}
-
-export async function touchChangeMeta(
-  projectDir: string,
-  name: string,
-  updates: Partial<Omit<ChangeMeta, "name" | "slug" | "schema" | "createdAt">> = {},
-  now = new Date(),
-) {
-  const location = await resolveChangeLocation(projectDir, name)
-  if (!location) {
-    return null
-  }
-
-  const slug = slugify(name)
-  const current = (await readChangeMetaFromPath(location.metaPath)) ?? (await inferChangeMetaFromLocation(projectDir, slug, location))
-
-  const next: ChangeMeta = {
-    ...current,
-    ...updates,
-    status: updates.status ?? location.status,
-    updatedAt: now.toISOString(),
-  }
-
-  await writeText(changeMetaPathForDir(location.dirPath), stringify(next))
-  return next
 }
 
 export type { ChangeLocation }

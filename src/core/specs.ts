@@ -1,6 +1,5 @@
 import path from "node:path"
 
-import { touchChangeMeta } from "./change.js"
 import { changeDir, getTemplate, pathExists, renderTemplate, slugify, writeText } from "./common.js"
 import { changeSpecsDir, toRelativePath } from "./paths.js"
 
@@ -22,7 +21,6 @@ export async function updateSpecs(input: UpdateSpecsInput) {
   const content = input.content ?? renderTemplate(await getTemplate(input.projectDir, "spec"), { name: slug, slug })
 
   await writeText(filePath, content)
-  await touchChangeMeta(input.projectDir, slug)
 
   return {
     paths: [toRelativePath(input.projectDir, filePath)],

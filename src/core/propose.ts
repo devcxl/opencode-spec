@@ -27,20 +27,20 @@ export async function proposeChange(input: ProposeChangeInput) {
 
     return {
       createdArtifacts,
-      createdFiles: [...scaffold.created, ...createdArtifacts.flatMap((artifact) => artifact.paths)],
-      metaPath: scaffold.metaPath,
+      createdFiles: [...new Set([...scaffold.created, ...createdArtifacts.flatMap((artifact) => artifact.paths)])],
       path: scaffold.path,
       schema: scaffold.schema,
       slug: scaffold.slug,
     }
   }
 
+  const proposal = await updateProposal({ projectDir: input.projectDir, name: scaffold.slug })
   const generated = await fastForwardChange({ projectDir: input.projectDir, name: scaffold.slug })
+  const createdArtifacts = [{ artifact: "proposal", paths: proposal.paths }, ...generated.createdArtifacts]
 
   return {
-    createdArtifacts: generated.createdArtifacts,
-    createdFiles: [...scaffold.created, ...generated.createdArtifacts.flatMap((artifact) => artifact.paths)],
-    metaPath: scaffold.metaPath,
+    createdArtifacts,
+    createdFiles: [...new Set([...scaffold.created, ...createdArtifacts.flatMap((artifact) => artifact.paths)])],
     path: scaffold.path,
     schema: scaffold.schema,
     slug: scaffold.slug,

@@ -4,7 +4,6 @@ import path from "node:path"
 import { datedArchiveChangeDir, toRelativePath } from "./paths.js"
 import { syncChangeSpecs } from "./sync.js"
 import { verifyChange } from "./verify.js"
-import { resolveChangeMeta, writeChangeMeta } from "./change.js"
 import {
   changeDir,
   pathExists,
@@ -36,13 +35,7 @@ export async function archiveChange(input: ArchiveChangeInput) {
   }
 
   const syncResult = await syncChangeSpecs({ projectDir: input.projectDir, name: slug })
-  const meta = await resolveChangeMeta(input.projectDir, slug)
   await rename(activeDir, targetArchiveDir)
-  await writeChangeMeta(input.projectDir, path.basename(targetArchiveDir), {
-    ...meta,
-    archivedAt: archivedAt.toISOString(),
-    status: "archived",
-  }, { archived: true })
 
   return {
     archivedTo: toRelativePath(input.projectDir, targetArchiveDir),

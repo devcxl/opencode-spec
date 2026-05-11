@@ -8,7 +8,6 @@ export {
 export type { ParsedTask } from "./tasks-format.js"
 export { copyDirectory, ensureParentDir, listDirectories, normalizeText, pathExists, readOptionalText, writeText } from "./fs.js"
 export {
-  CHANGE_META_FILE,
   PLUGIN_ID,
   archiveChangeDir,
   archiveChangeDir as archiveDir,

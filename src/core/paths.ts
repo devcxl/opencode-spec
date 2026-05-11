@@ -4,7 +4,6 @@ import path from "node:path"
 import { pathExists } from "./fs.js"
 
 export const PLUGIN_ID = "opencode-spec"
-export const CHANGE_META_FILE = ".openspec.yaml"
 
 export function slugify(value: string) {
   const slug = value
@@ -64,18 +63,6 @@ export function tasksPath(projectDir: string, name: string) {
 
 export function changeSpecsDir(projectDir: string, name: string) {
   return path.join(changeDir(projectDir, name), "specs")
-}
-
-export function changeMetaPathForDir(changeDirectory: string) {
-  return path.join(changeDirectory, CHANGE_META_FILE)
-}
-
-export function changeMetaPath(projectDir: string, name: string) {
-  return changeMetaPathForDir(changeDir(projectDir, name))
-}
-
-export function archivedChangeMetaPath(projectDir: string, name: string) {
-  return changeMetaPathForDir(archiveChangeDir(projectDir, name))
 }
 
 export function pluginTemplateDir(projectDir: string) {

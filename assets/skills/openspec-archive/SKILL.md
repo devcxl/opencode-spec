@@ -98,6 +98,6 @@ All artifacts complete. All tasks complete.
 - Always prompt for change selection if not provided
 - Use artifact graph for completion checking
 - Don't block archive on warnings - just inform and confirm
-- Preserve .openspec.yaml when moving to archive (it moves with the directory)
+- When moving to archive, the change directory moves as-is with the date prefix
 - Show clear summary of what happened
 - If delta specs exist, always run the sync assessment and show the combined summary before prompting

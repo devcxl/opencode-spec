@@ -32,7 +32,7 @@ When ready to implement, run /opsx-apply
    ```bash
    node .opencode/skills/openspec-propose/references/new-change.js "<name>"
    ```
- This creates a scaffolded change at `openspec/changes/<name>/` with `.openspec.yaml`.
+ This creates a scaffolded change at `openspec/changes/<name>/`.
 
 3. **Get the artifact build order**
    ```bash

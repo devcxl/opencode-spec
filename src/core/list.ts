@@ -19,7 +19,7 @@ export interface ListChangesInput {
 }
 
 async function summarizeChange(projectDir: string, rootDir: string, name: string, archived = false): Promise<ChangeSummary> {
-  const normalizedName = slugify(name)
+  const normalizedName = archived ? slugify(name.replace(/^\d{4}-\d{2}-\d{2}-/, "")) : slugify(name)
   const tasksPath = path.join(rootDir, name, "tasks.md")
   const content = (await readOptionalText(tasksPath)) ?? ""
   const tasks = parseTasks(content)
