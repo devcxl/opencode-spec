@@ -1,10 +1,9 @@
 import type { Plugin } from "@opencode-ai/plugin"
-import fs from "node:fs"
+import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-
-import { buildSessionNotice } from "./bootstrap/inject-context.js"
-import { syncAssets } from "./bootstrap/sync-assets.js"
 
 export function resolvePackageRoot(metaUrl: string) {
   return path.resolve(path.dirname(fileURLToPath(metaUrl)), "..")
@@ -32,19 +31,6 @@ function extractAndStripFrontmatter(content: string) {
   return { frontmatter, content: body }
 }
 
-interface CommandConfig {
-  template?: string
-  description?: string
-  agent?: string
-  model?: string
-  subtask?: boolean
-}
-
-interface PluginConfig {
-  skills?: { paths?: string[] }
-  command?: Record<string, CommandConfig>
-}
-
 interface ParsedCommand {
   name: string
   description?: string
@@ -54,31 +40,27 @@ interface ParsedCommand {
   template: string
 }
 
-let _commandsCache: ParsedCommand[] | undefined
-let _bootstrapCache: string | undefined
+let _commandsCache: { key: string; value: ParsedCommand[] } | undefined
 
-export function _resetCaches() {
-  _commandsCache = undefined
-  _bootstrapCache = undefined
-}
+function loadCommands(commandsDir: string, skillsDir: string): ParsedCommand[] {
+  const cacheKey = `${commandsDir}:${skillsDir}`
+  if (_commandsCache?.key === cacheKey) return _commandsCache.value
 
-// 同步读取：仅插件初始化时调用一次，且有缓存，对事件循环的阻塞可接受
-function loadCommands(commandsDir: string): ParsedCommand[] {
-  if (_commandsCache !== undefined) return _commandsCache
-
-  if (!fs.existsSync(commandsDir)) {
-    _commandsCache = []
-    return _commandsCache
+  if (!existsSync(commandsDir)) {
+    _commandsCache = { key: cacheKey, value: [] }
+    return []
   }
 
   const parsed: ParsedCommand[] = []
 
-  for (const file of fs.readdirSync(commandsDir)) {
+  for (const file of readdirSync(commandsDir)) {
     if (!file.endsWith(".md")) continue
 
     const name = path.basename(file, ".md")
-    const raw = fs.readFileSync(path.join(commandsDir, file), "utf8")
+    const raw = readFileSync(path.join(commandsDir, file), "utf8")
     const { frontmatter, content } = extractAndStripFrontmatter(raw)
+
+    const template = content.trim().replaceAll(".opencode/skills/", `${skillsDir}/`)
 
     parsed.push({
       name,
@@ -86,13 +68,15 @@ function loadCommands(commandsDir: string): ParsedCommand[] {
       agent: frontmatter.agent,
       model: frontmatter.model,
       subtask: frontmatter.subtask === "true" ? true : frontmatter.subtask === "false" ? false : undefined,
-      template: content.trim(),
+      template,
     })
   }
 
-  _commandsCache = parsed
-  return _commandsCache
+  _commandsCache = { key: cacheKey, value: parsed }
+  return parsed
 }
+
+let _bootstrapCache: string | undefined
 
 function getBootstrapContent(): string {
   if (_bootstrapCache !== undefined) return _bootstrapCache
@@ -112,16 +96,45 @@ OpenSpec 工作流已启用。
   return _bootstrapCache
 }
 
-export const OpencodeSpec: Plugin = async (ctx) => {
-  const projectDir = ctx.worktree || ctx.directory
-  const syncResult = await syncAssets({ packageRoot, projectDir })
+async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
+  const baseDir = await mkdtemp(path.join(tmpdir(), "opencode-spec-skills-"))
+  const destDir = path.join(baseDir, "skills")
 
+  await cp(sourceSkillsDir, destDir, { recursive: true })
+
+  async function processDir(dir: string) {
+    const entries = await readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await processDir(fullPath)
+        continue
+      }
+      if (entry.name === "SKILL.md") {
+        let content = await readFile(fullPath, "utf8")
+        content = content.replaceAll(".opencode/skills/", `${destDir}/`)
+        await writeFile(fullPath, content, "utf8")
+      }
+    }
+  }
+
+  await processDir(destDir)
+
+  process.on("exit", () => {
+    rm(baseDir, { recursive: true, force: true }).catch(() => {})
+  })
+
+  return destDir
+}
+
+export const OpencodeSpec: Plugin = async (ctx) => {
+  const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
   const commandsDir = path.join(packageRoot, "assets", "commands")
-  const skillsDir = path.join(packageRoot, "assets", "skills")
+  const skillsDir = await setupSkillsDir(sourceSkillsDir)
 
   return {
     config: async (rawConfig) => {
-      const config = rawConfig as PluginConfig
+      const config = rawConfig as Record<string, any>
 
       config.skills = config.skills || {}
       config.skills.paths = config.skills.paths || []
@@ -130,7 +143,7 @@ export const OpencodeSpec: Plugin = async (ctx) => {
       }
 
       config.command = config.command || {}
-      for (const cmd of loadCommands(commandsDir)) {
+      for (const cmd of loadCommands(commandsDir, skillsDir)) {
         if (config.command[cmd.name]) continue
         config.command[cmd.name] = {
           template: cmd.template,
@@ -139,49 +152,6 @@ export const OpencodeSpec: Plugin = async (ctx) => {
           model: cmd.model,
           subtask: cmd.subtask,
         }
-      }
-    },
-
-    event: async ({ event }) => {
-      if (event.type === "session.created" && (syncResult.changed || syncResult.conflicts.length > 0)) {
-        const notice = buildSessionNotice(syncResult)
-        const body = {
-          duration: notice.duration,
-          title: notice.title,
-          message: notice.message,
-          variant: notice.variant,
-        }
-
-        if (typeof ctx.client.tui?.showToast === "function") {
-          try {
-            await ctx.client.tui.showToast({ body })
-            return
-          } catch (error) {
-            await ctx.client.app.log({
-              body: {
-                service: "opencode-spec",
-                level: "warn",
-                message: "显示启动提示失败，已降级为应用日志。",
-                extra: {
-                  error: error instanceof Error ? error.message : String(error),
-                },
-              },
-            })
-          }
-        }
-
-        await ctx.client.app.log({
-          body: {
-            service: "opencode-spec",
-            level: notice.variant === "warning" ? "warn" : "info",
-            message: notice.message,
-            extra: {
-              duration: notice.duration,
-              title: notice.title,
-              variant: notice.variant,
-            },
-          },
-        })
       }
     },
 
