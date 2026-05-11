@@ -32,6 +32,19 @@ function extractAndStripFrontmatter(content: string) {
   return { frontmatter, content: body }
 }
 
+interface CommandConfig {
+  template?: string
+  description?: string
+  agent?: string
+  model?: string
+  subtask?: boolean
+}
+
+interface PluginConfig {
+  skills?: { paths?: string[] }
+  command?: Record<string, CommandConfig>
+}
+
 interface ParsedCommand {
   name: string
   description?: string
@@ -42,7 +55,14 @@ interface ParsedCommand {
 }
 
 let _commandsCache: ParsedCommand[] | undefined
+let _bootstrapCache: string | undefined
 
+export function _resetCaches() {
+  _commandsCache = undefined
+  _bootstrapCache = undefined
+}
+
+// 同步读取：仅插件初始化时调用一次，且有缓存，对事件循环的阻塞可接受
 function loadCommands(commandsDir: string): ParsedCommand[] {
   if (_commandsCache !== undefined) return _commandsCache
 
@@ -74,8 +94,6 @@ function loadCommands(commandsDir: string): ParsedCommand[] {
   return _commandsCache
 }
 
-let _bootstrapCache: string | undefined
-
 function getBootstrapContent(): string {
   if (_bootstrapCache !== undefined) return _bootstrapCache
 
@@ -103,7 +121,7 @@ export const OpencodeSpec: Plugin = async (ctx) => {
 
   return {
     config: async (rawConfig) => {
-      const config = rawConfig as Record<string, any>
+      const config = rawConfig as PluginConfig
 
       config.skills = config.skills || {}
       config.skills.paths = config.skills.paths || []

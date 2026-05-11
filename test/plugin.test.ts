@@ -9,11 +9,12 @@ vi.mock("../src/bootstrap/sync-assets.js", () => ({
 }))
 
 import { buildSessionNotice } from "../src/bootstrap/inject-context.js"
-import { OpencodeSpec } from "../src/plugin.js"
+import { OpencodeSpec, _resetCaches, type PluginConfig } from "../src/plugin.js"
 
 afterEach(() => {
   vi.clearAllMocks()
   vi.restoreAllMocks()
+  _resetCaches()
 })
 
 describe("buildSessionNotice", () => {
@@ -72,7 +73,7 @@ describe("OpencodeSpec config hook", () => {
       worktree: "/tmp/project",
     } as never)
 
-    const config = {} as Record<string, any>
+    const config = {} as PluginConfig
     await plugin.config?.(config)
 
     expect(config.skills).toBeDefined()
@@ -96,7 +97,7 @@ describe("OpencodeSpec config hook", () => {
       worktree: "/tmp/project",
     } as never)
 
-    const config = { skills: { paths: [] as string[] } } as Record<string, any>
+    const config = { skills: { paths: [] as string[] } } as PluginConfig
     await plugin.config?.(config)
     await plugin.config?.(config)
 
@@ -118,7 +119,7 @@ describe("OpencodeSpec config hook", () => {
       worktree: "/tmp/project",
     } as never)
 
-    const config = {} as Record<string, any>
+    const config = {} as PluginConfig
     await plugin.config?.(config)
 
     expect(config.command).toBeDefined()
@@ -151,7 +152,7 @@ describe("OpencodeSpec config hook", () => {
       command: {
         "opsx-propose": { template: "user custom", description: "custom" },
       },
-    } as Record<string, any>
+    } as PluginConfig
 
     await plugin.config?.(config)
 

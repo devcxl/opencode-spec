@@ -10,7 +10,7 @@ const ASSET_KINDS = ["skills", "templates"] as const
 
 type AssetKind = (typeof ASSET_KINDS)[number]
 
-const SKIP_SKILL_EXTENSIONS = [".md"]
+const SKIP_SKILL_EXTENSIONS = [".md", ".json"]
 
 export interface SyncAssetsInput {
   packageRoot: string
@@ -81,7 +81,7 @@ export async function syncAssets(input: SyncAssetsInput): Promise<SyncAssetsResu
     for (const relativePath of files) {
       if (kind === "skills") {
         const ext = path.extname(relativePath)
-        if (SKIP_SKILL_EXTENSIONS.includes(ext) || ext === ".json") continue
+        if (SKIP_SKILL_EXTENSIONS.includes(ext)) continue
       }
 
       const manifestKey = `${kind}/${relativePath}`
