@@ -27,16 +27,13 @@ propose → apply → archive
 explore（可选，随时使用）
 ```
 
-## 资源同步
+## 注入机制
 
-插件启动后同步以下资源：
+插件通过 `config` hook 在运行时注入 commands 和 skills，不向项目 `.opencode/` 目录写入文件：
 
-- `assets/commands/*` → `.opencode/commands/*`
-- `assets/skills/*` → `.opencode/skills/*`
-- `assets/templates/*` → `.opencode/opencode-spec/templates/*`
+- **commands**：解析 `assets/commands/*.md` 后直接注册到 `config.command`
+- **skills**：复制 `assets/skills/` 到系统临时目录，路径占位符替换后通过 `config.skills.paths` 注册
 
 前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
 
-这些 reference scripts 通过项目根下的相对路径 `.opencode/skills/**/references/*.js` 调用。
-
-如果 skills 首次写入或发生升级，建议重启 OpenCode。
+Skill 的 SKILL.md 中引用脚本使用 `.opencode/skills/` 作为路径占位符，运行时会被替换为临时目录实际路径，无需项目目录中存在对应文件。

@@ -10,11 +10,10 @@
 
 ## 核心能力
 
-插件同步以下资源到项目 `.opencode/` 目录：
+插件通过 OpenCode 的 `config` hook 在运行时注入以下能力（不向项目 `.opencode/` 目录写入文件）：
 
 - **commands**：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`
 - **skills**：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive`
-- **templates**：proposal.md、design.md、spec.md、tasks.md
 
 每个 skill 内置 JavaScript 参考脚本，替代外部 openspec CLI。
 
@@ -31,8 +30,6 @@
 
 前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
 
-原因：同步后的 skills / commands 会调用项目内 `.opencode/skills/**/references/*.js` 脚本。
-
 ## 工作流
 
 ```
@@ -47,16 +44,12 @@ explore（可选，随时使用）
 | `/opsx-apply` | `openspec-apply` | 按 tasks 执行实现 |
 | `/opsx-archive` | `openspec-archive` | 归档完成的 change |
 
-## 资源同步
+## 注入方式
 
-插件启动时自动同步资源到 `.opencode/` 目录：
+插件启动时通过 `config` hook 在运行时注入 commands 和 skills：
 
-- 目标文件不存在：直接写入
-- 目标文件与插件版本一致：跳过
-- 文件由插件升级引起变化：安全覆盖
-- 文件被用户改过：写入 `.new` 文件
-
-如 skills 首次写入或发生升级，建议重启 OpenCode。
+- **commands**：直接注册到 OpenCode 的 `config.command`，无需写入项目目录即可被 `/` 触发
+- **skills**：将 `assets/skills/` 复制到系统临时目录，替换内部路径占位符后，通过 `config.skills.paths` 注册；进程退出时自动清理
 
 ## 本地开发
 

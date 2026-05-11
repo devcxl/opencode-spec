@@ -2,79 +2,71 @@
 
 [返回 README](../../README.md) | [English](../en/architecture.md)
 
-`opencode-spec` 采用“插件负责同步资源文件，commands / skills 再通过 reference scripts 执行工作流”的方案，把 OpenSpec 工作流接入 OpenCode。
+`opencode-spec` 采用“纯运行时注入”方案，通过 OpenCode 的 `config` hook 在启动时注册 commands 和 skills，不向项目目录写入任何文件。
 
 ## 能力边界
 
 插件直接负责：
 
-- 启动时同步资源文件
-- 在会话创建时输出同步提示
+- 运行时注册 commands 和 skills
+- 注入会话引导消息
 
-插件间接接入：
+commands、skills 及其内置参考脚本的调用均由 OpenCode 原生机制执行，插件本身不介入运行时执行。
 
-- commands
-- skills
-- templates
-- reference scripts
+## 启动流程
 
-这些能力都不是通过插件动态注册，而是先写入项目 `.opencode/` 目录，再由 OpenCode 原生发现机制加载或执行。
+插件启动时按以下步骤完成注入：
 
-## 启动时同步流程
+### 1. Skill 临时目录构建（`setupSkillsDir`）
 
-启动时插件会扫描包内三个资源目录：
+```
+assets/skills/                   /tmp/opencode-spec-skills-XXXX/skills/
+├── openspec-propose/     →      ├── openspec-propose/
+│   ├── SKILL.md                  │   ├── SKILL.md (路径已替换)
+│   └── references/               │   └── references/
+├── openspec-apply/        →      ├── openspec-apply/
+├── openspec-archive/      →      ├── openspec-archive/
+└── openspec-explore/      →      └── openspec-explore/
+```
 
-- `assets/commands`
-- `assets/skills`
-- `assets/templates`
+- 将插件包内 `assets/skills/` 复制到系统临时目录（`/tmp/opencode-spec-skills-<random>/skills/`）
+- 遍历所有 `SKILL.md`，将 `.opencode/skills/` 路径占位符替换为临时目录实际路径
+- 通过 `config.skills.paths` 将临时目录注册为 skill 搜索路径
+- 进程退出时通过 `process.on("exit")` 自动清理临时目录
 
-并分别同步到：
+### 2. Command 注册（`loadCommands`）
 
-- `.opencode/commands`
-- `.opencode/skills`
-- `.opencode/opencode-spec/templates`
+```
+assets/commands/            config.command
+├── opsx-propose.md   →     /opsx-propose (template + description)
+├── opsx-apply.md     →     /opsx-apply
+├── opsx-archive.md   →     /opsx-archive
+└── opsx-explore.md   →     /opsx-explore
+```
 
-前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
+- 解析 `assets/commands/*.md` 的 frontmatter 和模板内容
+- 模板中 `.opencode/skills/` 路径同样替换为临时 skill 目录路径
+- 通过 `config.command` 直接注册，用户即可通过 `/` 触发
+- 如果 `opencode.json` 中已存在同名 command 定义，插件不会覆盖
 
-同步后的 commands / skills 会通过项目根下的相对路径 `.opencode/skills/**/references/*.js` 调用 reference scripts。
+### 3. 引导消息注入（`experimental.chat.messages.transform`）
 
-同步时会执行以下策略：
-
-1. **目标文件不存在**：直接写入
-2. **目标文件内容与插件资源一致**：跳过
-3. **目标文件与上次插件写入版本一致，但插件资源已升级**：直接覆盖
-4. **目标文件被用户改动过**：不覆盖原文件，而是生成同名 `.new` 文件，等待人工合并
-
-## Manifest 机制
-
-插件会写入 `.opencode/opencode-spec.manifest.json`，记录：
-
-- 插件版本
-- 每个已同步资源的目标路径
-- 每个资源的内容哈希
-
-这个 manifest 用来判断：
-
-- 当前文件是否仍然是插件上次写入的版本
-- 这次升级是否可以安全覆盖
-- 哪些文件已经进入“用户改动，需人工合并”状态
-
-## 会话提示
-
-在 `session.created` 事件上，插件会根据同步结果输出提示，内容通常包括：
-
-- 已同步多少资源文件
-- 是否检测到用户改动并生成 `.new`
-- commands / skills 是否更新，因此是否建议重启 OpenCode
-- 推荐流程：`proposal → specs → design → tasks → apply → archive`
+- 在每条会话的**首条用户消息**中注入 OpenSpec 工作流引导
+- 内容包含可用 slash commands 列表和推荐流程
+- 仅在首次注入，不会重复添加
 
 ## 当前限制
 
-当前 OpenCode 官方公开插件 API 没有稳定的 system prompt / message context 注入 hook。
+`experimental.chat.messages.transform` 是实验性 API，未来可能发生变化。
 
-因此本插件当前版本采用替代方案：
+如果该 API 被移除，插件将失去引导消息注入能力，但 commands 和 skills 注入不受影响（均通过 `config` hook 实现，属于稳定 API）。
 
-- 用 skill 与 command 模板承载流程约束
-- 用启动同步与会话提示补足引导能力
+## 参考脚本的调用方式
 
-这也是为什么 commands / skills / reference scripts 的接入方式依赖文件同步，而不是纯运行时注册。
+Skills 的 SKILL.md 中引用参考脚本的写法：
+
+```
+node .opencode/skills/openspec-propose/references/new-change.js "<name>"
+```
+
+`.opencode/skills/` 是路径占位符，在运行时被替换为临时目录的实际路径。脚本通过 `node` 直接执行，操作 `openspec/` 目录结构。

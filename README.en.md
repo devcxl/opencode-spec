@@ -10,11 +10,10 @@
 
 ## Core Capabilities
 
-The plugin syncs these resources to `.opencode/` directory:
+The plugin injects these capabilities at runtime via OpenCode's `config` hook (no files are written to the project's `.opencode/` directory):
 
-- **commands**：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`
-- **skills**：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive`
-- **templates**：proposal.md、design.md、spec.md、tasks.md
+- **commands**: `/opsx-propose`, `/opsx-explore`, `/opsx-apply`, `/opsx-archive`
+- **skills**: `openspec-propose`, `openspec-explore`, `openspec-apply`, `openspec-archive`
 
 Each skill includes built-in JavaScript reference scripts, replacing external openspec CLI.
 
@@ -31,8 +30,6 @@ Add to `opencode.json` at project root:
 
 Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
 
-Reason: synced skills / commands invoke project-local `.opencode/skills/**/references/*.js` scripts.
-
 ## Workflow
 
 ```
@@ -47,16 +44,12 @@ explore (optional, use anytime)
 | `/opsx-apply` | `openspec-apply` | Implement tasks |
 | `/opsx-archive` | `openspec-archive` | Archive completed change |
 
-## Asset Sync
+## How Injection Works
 
-On startup, the plugin syncs assets to `.opencode/` with these rules:
+The plugin uses OpenCode's `config` hook to inject commands and skills at runtime:
 
-- target file does not exist: write directly
-- target file matches plugin version: skip
-- file changed due to plugin upgrade: overwrite safely
-- file was edited by user: write `.new` file
-
-If skills are written for the first time or upgraded, restarting OpenCode is recommended.
+- **commands**: Parsed from `assets/commands/` and registered directly via `config.command` — available via `/` without any file sync
+- **skills**: Copied from `assets/skills/` to a system temp directory (`/tmp`), path placeholders are replaced in SKILL.md, then registered via `config.skills.paths`; temp directory is auto-cleaned on process exit
 
 ## Local Development
 

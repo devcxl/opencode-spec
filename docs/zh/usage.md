@@ -17,7 +17,7 @@
 
 前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
 
-原因：skills / commands 会调用同步到项目内 `.opencode/skills/**/references/*.js` 的 Node 脚本。
+原因：skills 会调用 JavaScript 参考脚本，这些脚本通过 `node` 执行。
 
 ## 2. 工作流
 
@@ -57,7 +57,7 @@ explore（可选，随时使用）
 
 ## 4. 内置参考脚本
 
-每个 skill 内置 JavaScript 脚本，位于 `.opencode/skills/<skill-name>/references/`：
+每个 skill 内置 JavaScript 脚本，脚本位于插件的 `assets/skills/<skill-name>/references/` 目录，通过 `node` 执行：
 
 - `openspec-propose`：new-change.js、status.js、instructions.js
 - `openspec-explore`：list.js
@@ -65,14 +65,3 @@ explore（可选，随时使用）
 - `openspec-archive`：archive.js
 
 这些脚本替代外部 openspec CLI，直接操作 `openspec/` 目录结构。
-
-## 5. 处理同步冲突
-
-如果插件检测到文件被用户改过，不会覆盖，而是生成 `.new` 文件。
-
-建议：
-
-1. 对比原文件与 `.new` 文件
-2. 合并需要保留的内容
-3. 删除 `.new` 文件
-4. 如有更新，重启 OpenCode

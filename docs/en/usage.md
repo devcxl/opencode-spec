@@ -17,7 +17,7 @@ Configure `opencode.json` in the project root:
 
 Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
 
-Reason: skills / commands invoke Node scripts synced into `.opencode/skills/**/references/*.js`.
+Reason: skills invoke JavaScript reference scripts that run via `node`.
 
 ## 2. Workflow
 
@@ -57,22 +57,11 @@ Archive completed change.
 
 ## 4. Built-in Reference Scripts
 
-Each skill includes JavaScript scripts in `.opencode/skills/<skill-name>/references/`:
+Each skill includes JavaScript scripts in the plugin's `assets/skills/<skill-name>/references/` directory, executed via `node`:
 
 - `openspec-propose`: new-change.js, status.js, instructions.js
 - `openspec-explore`: list.js
 - `openspec-apply`: prepare-apply.js, mark-tasks.js
 - `openspec-archive`: archive.js
 
-These scripts replace external openspec CLI and directly manipulate `openspec/` directory structure.
-
-## 5. Handle Sync Conflicts
-
-If the plugin detects file edits, it creates `.new` file instead of overwriting.
-
-Recommended handling:
-
-1. compare original file with `.new` file
-2. merge content you want to keep
-3. remove `.new` file
-4. restart OpenCode if updated
+These scripts replace external openspec CLI and directly manipulate the `openspec/` directory structure.

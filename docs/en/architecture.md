@@ -2,79 +2,71 @@
 
 [Back to README](../../README.en.md) | [中文](../zh/architecture.md)
 
-`opencode-spec` integrates the OpenSpec workflow into OpenCode by syncing workflow assets into the project and letting commands / skills execute bundled reference scripts.
+`opencode-spec` uses a "pure runtime injection" approach: commands and skills are registered at startup via OpenCode's `config` hook, with no files written to the project directory.
 
 ## Capability boundaries
 
 The plugin directly handles:
 
-- syncing asset files at startup
-- emitting sync notices when a session is created
+- registering commands and skills at runtime
+- injecting a session guidance message
 
-The plugin indirectly integrates:
+Command execution, skill invocation, and reference script calls are all handled by OpenCode's native mechanisms. The plugin does not participate in runtime execution.
 
-- commands
-- skills
-- templates
-- reference scripts
+## Startup flow
 
-These assets are not dynamically registered by the plugin. Instead, they are written into the project's `.opencode/` directory and then loaded or executed by OpenCode's native discovery mechanism.
+The plugin completes injection through these steps:
 
-## Startup sync flow
+### 1. Skill temp directory setup (`setupSkillsDir`)
 
-At startup, the plugin scans three bundled asset directories:
+```
+assets/skills/                   /tmp/opencode-spec-skills-XXXX/skills/
+├── openspec-propose/     →      ├── openspec-propose/
+│   ├── SKILL.md                  │   ├── SKILL.md (paths replaced)
+│   └── references/               │   └── references/
+├── openspec-apply/        →      ├── openspec-apply/
+├── openspec-archive/      →      ├── openspec-archive/
+└── openspec-explore/      →      └── openspec-explore/
+```
 
-- `assets/commands`
-- `assets/skills`
-- `assets/templates`
+- Copies `assets/skills/` from the plugin package to a system temp directory (`/tmp/opencode-spec-skills-<random>/skills/`)
+- Recursively walks all `SKILL.md` files, replacing `.opencode/skills/` path placeholders with actual temp directory paths
+- Registers the temp directory via `config.skills.paths` as a skill search path
+- Cleans up the temp directory automatically on process exit via `process.on("exit")`
 
-It then syncs them into:
+### 2. Command registration (`loadCommands`)
 
-- `.opencode/commands`
-- `.opencode/skills`
-- `.opencode/opencode-spec/templates`
+```
+assets/commands/            config.command
+├── opsx-propose.md   →     /opsx-propose (template + description)
+├── opsx-apply.md     →     /opsx-apply
+├── opsx-archive.md   →     /opsx-archive
+└── opsx-explore.md   →     /opsx-explore
+```
 
-Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
+- Parses frontmatter and template content from `assets/commands/*.md`
+- Replaces `.opencode/skills/` paths in templates with temp skill directory paths
+- Registers directly via `config.command`, making them available via `/`
+- If a command with the same name already exists in `opencode.json`, the plugin will not override it
 
-Synced commands / skills invoke reference scripts via project-root-relative paths under `.opencode/skills/**/references/*.js`.
+### 3. Guidance message injection (`experimental.chat.messages.transform`)
 
-The sync strategy is:
-
-1. **target file does not exist**: write it directly
-2. **target file already matches plugin content**: skip it
-3. **target file still matches the last plugin-written version, but plugin content changed**: overwrite it directly
-4. **target file was modified by the user**: do not overwrite it; generate a sibling `.new` file for manual merge
-
-## Manifest mechanism
-
-The plugin writes `.opencode/opencode-spec.manifest.json` to track:
-
-- plugin version
-- target path of each synced asset
-- content hash of each asset
-
-This manifest is used to determine:
-
-- whether the current file is still the version previously written by the plugin
-- whether the current upgrade can safely overwrite the file
-- which files are now in a “user-modified, manual merge required” state
-
-## Session notice
-
-On the `session.created` event, the plugin emits a notice based on sync results, typically including:
-
-- how many asset files were synced
-- whether user modifications were detected and `.new` files were generated
-- whether commands / skills changed and therefore OpenCode should be restarted
-- the recommended workflow: `proposal → specs → design → tasks → apply → archive`
+- Injects an OpenSpec workflow guidance block into the **first user message** of each session
+- Content includes available slash commands and recommended workflow
+- Injected only once per session, never duplicated
 
 ## Current limitation
 
-The public OpenCode plugin API currently does not expose a stable hook for injecting system prompts or message context.
+`experimental.chat.messages.transform` is an experimental API and may change in the future.
 
-Because of that, this plugin currently uses a workaround:
+If this API is removed, guidance message injection will be lost, but command and skill injection will not be affected (both use the `config` hook, which is a stable API).
 
-- workflow constraints are carried by skill and command templates
-- startup sync and session notices provide the operational guidance
+## How reference scripts are invoked
 
-That is also why commands / skills / reference scripts are integrated through file sync instead of pure runtime registration.
+SKILL.md files reference scripts using this pattern:
+
+```
+node .opencode/skills/openspec-propose/references/new-change.js "<name>"
+```
+
+`.opencode/skills/` is a path placeholder that is replaced at runtime with the actual temp directory path. Scripts are executed via `node` and operate on the `openspec/` directory structure.

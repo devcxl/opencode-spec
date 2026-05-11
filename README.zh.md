@@ -8,7 +8,7 @@
 
 `opencode-spec` 是一个 OpenCode 插件，用于把 OpenSpec 风格的规格驱动开发流程接入 OpenCode。
 
-插件会把 commands、skills、templates 以及 reference scripts 同步到项目 `.opencode/` 目录，并在会话启动时提示同步结果。
+插件通过 `config` hook 在运行时把 commands / skills 注册到 OpenCode，并在会话启动时注入工作流提示。
 
 ## 使用指南
 
@@ -25,16 +25,7 @@
 
 前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
 
-原因：同步后的 skills / commands 会调用项目内 `.opencode/skills/**/references/*.js` 脚本。
-
-启动 OpenCode 后，插件会自动同步以下资源：
-
-- `.opencode/commands/opsx-*.md`
-- `.opencode/skills/openspec-*/**`
-- `.opencode/skills/_shared/**`
-- `.opencode/opencode-spec/templates/*.md`
-
-如果 commands 或 skills 是首次写入，或被插件升级覆盖，建议重启 OpenCode，让原生发现机制重新扫描。
+原因：skills 会调用 JavaScript 参考脚本，这些脚本通过 `node` 执行。
 
 ### 2. 初始化 OpenSpec 目录
 
@@ -62,46 +53,35 @@
 
 - **commands**：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`
 - **skills**：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive`
-- **reference scripts**：`.opencode/skills/<skill>/references/*.js`
 
 如果你希望：
 
 - **让 Agent 按预设提示组织流程**：优先用 commands / skills
-- **显式执行底层脚本**：直接用 reference scripts
+- **显式执行底层脚本**：skills 的 SKILL.md 中已内置脚本调用指引
 
-### 5. 理解资源同步行为
+### 5. 理解注入行为
 
-插件启动时会把内置资源同步到项目 `.opencode/` 目录。
+插件通过 OpenCode 的 `config` hook 在运行时注入 commands 和 skills，**不向项目 `.opencode/` 目录写入任何文件**：
 
-同步规则如下：
+- **commands**：解析 `assets/commands/`，直接注册到 `config.command`，无需文件同步即可被 `/` 触发
+- **skills**：将 `assets/skills/` 复制到系统临时目录（`/tmp`），替换 SKILL.md 中的路径占位符后，通过 `config.skills.paths` 注册；进程退出时临时目录自动清理
+- **会话提示**：通过 `experimental.chat.messages.transform` hook 在首条用户消息中注入 OpenSpec 工作流引导
 
-- 目标文件不存在：直接写入
-- 目标文件与插件版本一致：跳过
-- 文件仅由插件升级引起变化：安全覆盖
-- 文件被用户改过：不覆盖原文件，改为写入同名 `.new` 文件
-
-如果出现 `.new` 文件，表示插件发现本地有人工修改，需要你手动合并。
+这意味着无需重启 OpenCode 即可立即使用 commands 和 skills。
 
 详细使用示例见 [`docs/zh/usage.md`](docs/zh/usage.md)。
 
 ## 运行原理
 
-这个插件的核心思路不是“把所有能力都动态注册进 OpenCode”，而是通过文件同步把 OpenSpec 工作流资源接入项目：
+这个插件的核心思路是“纯运行时注入”——不向项目目录同步文件，而是通过 `config` hook 在启动时注册所有能力：
 
-- **commands / skills / templates 由插件同步到项目目录**
-- **reference scripts 由 skills 调用，直接操作 `openspec/` 目录结构**
+- **commands 由 `config.command` 直接注册**，模板中引用脚本路径在解析时完成路径替换
+- **skills 复制到 `/tmp` 临时目录后通过 `config.skills.paths` 注册**，进程退出时清理
+- **引导消息在首条用户消息中注入**，告知可用命令和推荐流程
 
-启动时插件会：
+这样做的优势是隔离性强、无残留、升级即生效。
 
-1. 扫描包内 `assets/commands`、`assets/skills`、`assets/templates`
-2. 把资源同步到项目 `.opencode/` 目录
-3. 写入 `.opencode/opencode-spec.manifest.json` 记录已同步文件与哈希
-4. 如果发现用户改过已同步文件，不强制覆盖，而是写入对应 `.new` 文件供人工合并
-5. 在会话创建时输出提示，告知是否发生同步、冲突以及是否建议重启
-
-这意味着 commands / skills 的新增或升级依赖 OpenCode 原生扫描，所以部分场景需要重启。
-
-更详细的实现说明与限制见 [`docs/zh/architecture.md`](docs/zh/architecture.md)。
+更详细的实现说明见 [`docs/zh/architecture.md`](docs/zh/architecture.md)。
 
 ## 本地开发
 

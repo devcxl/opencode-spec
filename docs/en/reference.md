@@ -27,16 +27,13 @@ propose → apply → archive
 explore (optional, use anytime)
 ```
 
-## Asset Sync
+## Injection Mechanism
 
-On startup, the plugin syncs:
+The plugin injects commands and skills at runtime via the `config` hook, without writing any files to the project's `.opencode/` directory:
 
-- `assets/commands/*` → `.opencode/commands/*`
-- `assets/skills/*` → `.opencode/skills/*`
-- `assets/templates/*` → `.opencode/opencode-spec/templates/*`
+- **commands**: Parsed from `assets/commands/*.md` and registered directly into `config.command`
+- **skills**: Copied from `assets/skills/` to a system temp directory, path placeholders replaced, then registered via `config.skills.paths`
 
 Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
 
-These reference scripts are invoked via project-root-relative paths under `.opencode/skills/**/references/*.js`.
-
-If skills are written for the first time or upgraded, restarting OpenCode is recommended.
+SKILL.md files reference scripts using `.opencode/skills/` as a path placeholder. These are replaced at runtime with actual temp directory paths, so no corresponding files need to exist in the project directory.
