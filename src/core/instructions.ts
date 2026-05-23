@@ -14,6 +14,7 @@ export interface GetArtifactInstructionsInput {
   artifact: ArtifactId
 }
 
+/** 根据制品类型获取对应的模板名称 */
 function getArtifactTemplateName(artifact: ArtifactId) {
   switch (artifact) {
     case "proposal":
@@ -27,6 +28,7 @@ function getArtifactTemplateName(artifact: ArtifactId) {
   }
 }
 
+/** 获取制品的目标输出路径 */
 function getArtifactTargetPaths(projectDir: string, slug: string, artifact: ArtifactId) {
   const baseDir = changeDir(projectDir, slug)
 
@@ -42,6 +44,17 @@ function getArtifactTargetPaths(projectDir: string, slug: string, artifact: Arti
   }
 }
 
+/**
+ * 获取生成某个制品所需的完整上下文
+ *
+ * 包括：
+ * - 制品定义（目标路径、前置依赖）
+ * - 当前状态（是否可生成、缺失的依赖）
+ * - 渲染后的模板内容
+ * - 所有前置制品文件的完整内容
+ *
+ * 此信息会被注入到 AI 提示中，指导 AI 生成对应的制品。
+ */
 export async function getArtifactInstructions(input: GetArtifactInstructionsInput) {
   const meta = await resolveChangeMeta(input.projectDir, input.name)
   const artifactStatus = await getArtifactStatus(input.projectDir, meta.slug, input.artifact)

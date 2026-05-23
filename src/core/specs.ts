@@ -9,6 +9,11 @@ export interface UpdateSpecsInput {
   content?: string
 }
 
+/**
+ * 更新（或创建）变更的规格说明文件（specs/spec.md）
+ *
+ * 未提供 content 时使用默认模板生成规格说明骨架。
+ */
 export async function updateSpecs(input: UpdateSpecsInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)

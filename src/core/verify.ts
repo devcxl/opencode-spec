@@ -16,6 +16,15 @@ export interface VerifyChangeResult {
   warnings: string[]
 }
 
+/**
+ * 验证变更是否可以归档
+ *
+ * 在 validateChange 的基础上增加：
+ * - 检查所有任务是否已完成
+ * - 建议补充 Verification Notes
+ *
+ * 只有 critical 列表为空时才允许归档。
+ */
 export async function verifyChange(input: VerifyChangeInput): Promise<VerifyChangeResult> {
   const validation = await validateChange({
     projectDir: input.projectDir,

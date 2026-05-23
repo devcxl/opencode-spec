@@ -4,14 +4,22 @@ import { readOptionalText } from "./fs.js"
 import { projectConfigPath } from "./paths.js"
 import type { BuiltinSchemaName } from "./types.js"
 
+/** OpenSpec 项目配置结构 */
 export interface OpenSpecProjectConfig {
   schema: BuiltinSchemaName
 }
 
+/** 默认配置：使用 spec-driven schema */
 const DEFAULT_PROJECT_CONFIG: OpenSpecProjectConfig = {
   schema: "spec-driven",
 }
 
+/**
+ * 加载项目配置文件（openspec/config.yaml）
+ *
+ * 如果文件不存在、内容为空、或 schema 字段缺失，则返回默认配置。
+ * 目前仅支持 "spec-driven" 这一种 schema。
+ */
 export async function loadProjectConfig(projectDir: string): Promise<OpenSpecProjectConfig> {
   const raw = await readOptionalText(projectConfigPath(projectDir))
   if (!raw?.trim()) {

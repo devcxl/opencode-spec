@@ -18,6 +18,16 @@ export interface PrepareApplyInput {
   verificationSummary?: string
 }
 
+/**
+ * 执行变更的实现步骤（apply）
+ *
+ * 功能：
+ * 1. 将指定的一组任务标记为已完成
+ * 2. 追加验证备注到 tasks.md 末尾
+ * 3. 返回当前任务的完成情况
+ *
+ * 仅当内容实际变化时才写入磁盘。
+ */
 export async function prepareApply(input: PrepareApplyInput) {
   const slug = slugify(input.name)
   const filePath = path.join(changeDir(input.projectDir, slug), "tasks.md")

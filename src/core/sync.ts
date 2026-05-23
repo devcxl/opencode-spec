@@ -11,10 +11,17 @@ export interface SyncChangeSpecsInput {
   name: string
 }
 
+/** 计算规格文件在全局 specs 目录中的目标路径 */
 function resolveTargetSpecPath(projectDir: string, slug: string, relativePath: string) {
   return path.join(specsRoot(projectDir), slug, relativePath)
 }
 
+/**
+ * 将变更中的规格文件同步到全局 specs 目录
+ *
+ * 在归档时调用，将变更的 specs/*.md 复制到 openspec/specs/<slug>/ 下，
+ * 使得已归档变更的规格说明可在全局位置被长期引用。
+ */
 export async function syncChangeSpecs(input: SyncChangeSpecsInput) {
   const validation = await validateChange({ projectDir: input.projectDir, name: input.name, strict: true })
   const location = await resolveChangeLocation(input.projectDir, validation.slug)

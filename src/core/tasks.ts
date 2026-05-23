@@ -9,6 +9,12 @@ export interface UpdateTasksInput {
   content?: string
 }
 
+/**
+ * 更新（或创建）变更的任务文件（tasks.md）
+ *
+ * 如果未提供 content，则使用模板生成默认的任务列表。
+ * 写入前会校验任务格式是否正确（含前置零、重复 ID 等）。
+ */
 export async function updateTasks(input: UpdateTasksInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)

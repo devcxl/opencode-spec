@@ -1,3 +1,5 @@
+/** OpenSpec 核心模块统一导出入口 */
+
 export { archiveChange } from "./archive.js"
 export { prepareApply } from "./apply.js"
 export { bulkArchiveChanges } from "./bulk-archive.js"

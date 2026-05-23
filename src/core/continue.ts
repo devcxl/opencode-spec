@@ -13,6 +13,7 @@ export interface ContinueChangeInput {
   name: string
 }
 
+/** 根据制品类型创建对应的文件（使用模板生成默认内容） */
 async function createArtifact(projectDir: string, slug: string, artifact: ArtifactId) {
   switch (artifact) {
     case "proposal":
@@ -26,6 +27,13 @@ async function createArtifact(projectDir: string, slug: string, artifact: Artifa
   }
 }
 
+/**
+ * 继续生成变更的下一个制品
+ *
+ * 按照 schema 定义的制品顺序，找到第一个状态为 "ready" 的制品，
+ * 用模板生成其文件内容，并返回可用于 AI 进一步编辑的 instructions。
+ * 如果没有可继续生成的制品则抛异常。
+ */
 export async function continueChange(input: ContinueChangeInput) {
   const meta = await resolveChangeMeta(input.projectDir, input.name)
   const schema = getSchema(meta.schema)

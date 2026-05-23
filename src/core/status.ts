@@ -7,6 +7,7 @@ import { toRelativePath } from "./paths.js"
 import type { ChangeMeta } from "./types.js"
 import type { ArtifactId, ArtifactStatus, ChangeStatus } from "./types.js"
 
+/** 解析变更的基准目录路径 */
 async function resolveChangeBaseDir(projectDir: string, slug: string) {
   const location = await resolveChangeLocation(projectDir, slug)
   if (!location) {
@@ -16,6 +17,11 @@ async function resolveChangeBaseDir(projectDir: string, slug: string) {
   return location.dirPath
 }
 
+/**
+ * 将 glob 模式转换为正则表达式
+ *
+ * 支持 **（跨目录匹配）、*（单段匹配）等基本 glob 语法。
+ */
 function globPatternToRegExp(pattern: string) {
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&")
   const doubleStarNormalized = escaped.replace(/\*\*\//g, "(?:.*/)?")
@@ -23,6 +29,12 @@ function globPatternToRegExp(pattern: string) {
   return new RegExp(`^${singleStarNormalized}$`)
 }
 
+/**
+ * 匹配制品定义中的输出路径模式
+ *
+ * 如果 outputPath 不含 *，直接检测文件是否存在；
+ * 否则使用 glob 匹配递归列出所有符合条件的文件。
+ */
 async function matchOutputPath(projectDir: string, baseDir: string, outputPath: string) {
   if (!outputPath.includes("*")) {
     const filePath = `${baseDir}/${outputPath}`
@@ -36,6 +48,7 @@ async function matchOutputPath(projectDir: string, baseDir: string, outputPath: 
     .map((filePath: string) => toRelativePath(projectDir, filePath))
 }
 
+/** 使用 ChangeMeta 检测制品的文件路径 */
 async function detectArtifactPathsForMeta(projectDir: string, meta: ChangeMeta, artifactId: ArtifactId) {
   const baseDir = await resolveChangeBaseDir(projectDir, meta.slug)
   const definition = getArtifactDefinition(meta.schema, artifactId)
@@ -43,11 +56,20 @@ async function detectArtifactPathsForMeta(projectDir: string, meta: ChangeMeta, 
   return matched.flat().sort((left, right) => left.localeCompare(right))
 }
 
+/** 检测变更中某个制品的产出文件路径（按 slug 查找） */
 export async function detectArtifactPaths(projectDir: string, slug: string, artifactId: ArtifactId) {
   const meta = await resolveChangeMeta(projectDir, slug)
   return detectArtifactPathsForMeta(projectDir, meta, artifactId)
 }
 
+/**
+ * 获取某个制品在当前变更中的状态
+ *
+ * 状态判定逻辑：
+ * - 如果制品文件存在 → "done"
+ * - 如果前置依赖的文件都存在 → "ready"（可以生成了）
+ * - 如果前置依赖缺失 → "blocked"
+ */
 async function getArtifactStatusForMeta(projectDir: string, meta: ChangeMeta, artifactId: ArtifactId): Promise<ArtifactStatus> {
   const existingPaths = await detectArtifactPathsForMeta(projectDir, meta, artifactId)
   if (existingPaths.length > 0) {
@@ -71,11 +93,13 @@ async function getArtifactStatusForMeta(projectDir: string, meta: ChangeMeta, ar
   }
 }
 
+/** 获取变更中指定制品的状态 */
 export async function getArtifactStatus(projectDir: string, slug: string, artifactId: ArtifactId): Promise<ArtifactStatus> {
   const meta = await resolveChangeMeta(projectDir, slug)
   return getArtifactStatusForMeta(projectDir, meta, artifactId)
 }
 
+/** 获取变更的完整状态（所有制品的状态） */
 export async function getChangeStatus(projectDir: string, slug: string): Promise<ChangeStatus> {
   const meta = await resolveChangeMeta(projectDir, slug)
   const schema = getSchema(meta.schema)

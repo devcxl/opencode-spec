@@ -9,6 +9,11 @@ export interface UpdateDesignInput {
   content?: string
 }
 
+/**
+ * 更新（或创建）变更的设计方案文件（design.md）
+ *
+ * 未提供 content 时使用默认模板生成设计文档骨架。
+ */
 export async function updateDesign(input: UpdateDesignInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)

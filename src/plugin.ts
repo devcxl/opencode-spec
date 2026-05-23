@@ -5,12 +5,20 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
+/** 根据 import.meta.url 解析插件包的根目录路径 */
 export function resolvePackageRoot(metaUrl: string) {
   return path.resolve(path.dirname(fileURLToPath(metaUrl)), "..")
 }
 
+/** 插件包的根目录 */
 const packageRoot = resolvePackageRoot(import.meta.url)
 
+/**
+ * 解析并剥离 Markdown 文件的 frontmatter
+ *
+ * Frontmatter 是位于文件开头的 --- 包裹的 YAML 格式元数据，
+ * 例如：---\ntitle: foo\n---\n正文内容
+ */
 function extractAndStripFrontmatter(content: string) {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
   if (!match) return { frontmatter: {} as Record<string, string>, content }
@@ -31,6 +39,7 @@ function extractAndStripFrontmatter(content: string) {
   return { frontmatter, content: body }
 }
 
+/** 解析后的 slash command 结构 */
 interface ParsedCommand {
   name: string
   description?: string
@@ -40,8 +49,15 @@ interface ParsedCommand {
   template: string
 }
 
+/** commands 缓存，避免重复读取磁盘 */
 let _commandsCache: { key: string; value: ParsedCommand[] } | undefined
 
+/**
+ * 从 commandsDir 加载所有 slash command
+ *
+ * 遍历目录下的所有 .md 文件，解析 frontmatter 获取命令的元数据，
+ * 并将 skills 路径替换为运行时动态创建的 skills 目录。
+ */
 function loadCommands(commandsDir: string, skillsDir: string): ParsedCommand[] {
   const cacheKey = `${commandsDir}:${skillsDir}`
   if (_commandsCache?.key === cacheKey) return _commandsCache.value
@@ -76,8 +92,14 @@ function loadCommands(commandsDir: string, skillsDir: string): ParsedCommand[] {
   return parsed
 }
 
+/** bootstrap 消息缓存 */
 let _bootstrapCache: string | undefined
 
+/**
+ * 生成每次对话注入的 bootstrap 提示消息
+ *
+ * 该消息告知用户 OpenSpec 工作流已启用以及可用的 slash command。
+ */
 function getBootstrapContent(): string {
   if (_bootstrapCache !== undefined) return _bootstrapCache
 
@@ -96,6 +118,12 @@ OpenSpec 工作流已启用。
   return _bootstrapCache
 }
 
+/**
+ * 在临时目录中复制并处理 skills 目录
+ *
+ * SKILL.md 中的路径占位符 .opencode/skills/ 会被替换为实际的临时目录路径。
+ * 进程退出时自动清理临时目录。
+ */
 async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
   const baseDir = await mkdtemp(path.join(tmpdir(), "opencode-spec-skills-"))
   const destDir = path.join(baseDir, "skills")
@@ -127,12 +155,22 @@ async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
   return destDir
 }
 
+/**
+ * OpenSpec 插件工厂函数
+ *
+ * 注册两个钩子：
+ * 1. config - 在启动时注入 skills 路径和 slash commands
+ * 2. experimental.chat.messages.transform - 在每条用户消息前插入 bootstrap 提示
+ */
 export const OpencodeSpec: Plugin = async (ctx) => {
   const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
   const commandsDir = path.join(packageRoot, "assets", "commands")
   const skillsDir = await setupSkillsDir(sourceSkillsDir)
 
   return {
+    /**
+     * 配置钩子：将 OpenSpec 的 skills 目录和 slash commands 注入到 OpenCode 配置中
+     */
     config: async (rawConfig) => {
       const config = rawConfig as Record<string, any>
 
@@ -155,6 +193,11 @@ export const OpencodeSpec: Plugin = async (ctx) => {
       }
     },
 
+    /**
+     * 消息转换钩子：在第一条用户消息前插入 bootstrap 提示
+     *
+     * 如果 bootstrap 已存在（如已被其他插件或历史注入），则跳过。
+     */
     "experimental.chat.messages.transform": async (_input, output) => {
       const bootstrap = getBootstrapContent()
       if (!output.messages.length) return

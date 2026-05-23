@@ -14,6 +14,15 @@ export interface ProposeChangeInput {
   spec?: string
 }
 
+/**
+ * 一键创建变更并生成所有制品
+ *
+ * 两种情况：
+ * 1. 如果提供了任何制品的内容（proposal/spec/design/tasks），
+ *    则直接使用提供的 content 写入对应文件。
+ * 2. 如果未提供任何内容，先生成 proposal，再 fast-forward
+ *    自动按依赖顺序生成后续所有可生成的制品。
+ */
 export async function proposeChange(input: ProposeChangeInput) {
   const scaffold = await createChangeScaffold({ projectDir: input.projectDir, name: input.name })
 

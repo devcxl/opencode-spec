@@ -10,6 +10,13 @@ export interface CreateChangeScaffoldInput {
   name: string
 }
 
+/**
+ * 创建变更的基础目录结构（脚手架）
+ *
+ * 在 openspec/changes/ 下创建 <slug>/ 目录和 specs/ 子目录，
+ * 并初始化一个空的 proposal.md（仅含 frontmatter 元数据）。
+ * 如果变更已存在则抛出异常。
+ */
 export async function createChangeScaffold(input: CreateChangeScaffoldInput) {
   await ensureOpenSpecStructure(input.projectDir)
 

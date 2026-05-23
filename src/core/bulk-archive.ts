@@ -5,6 +5,12 @@ export interface BulkArchiveChangesInput {
   names: string[]
 }
 
+/**
+ * 批量归档多个已完成变更
+ *
+ * 逐个调用 archiveChange 进行归档，
+ * 成功和失败的变更分别返回，便于调用方处理部分成功的情况。
+ */
 export async function bulkArchiveChanges(input: BulkArchiveChangesInput) {
   const archived: Array<{ archivedTo: string; slug: string; specsMergedTo: string[] }> = []
   const failed: Array<{ error: string; name: string }> = []

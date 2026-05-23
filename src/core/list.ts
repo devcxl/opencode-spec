@@ -5,6 +5,7 @@ import { archiveRoot, changeDir, changesRoot, listDirectories, parseTasks, readO
 import { toRelativePath } from "./paths.js"
 import { verifyChange } from "./verify.js"
 
+/** 变更概要信息 */
 export interface ChangeSummary {
   completedTasks: number
   name: string
@@ -18,6 +19,13 @@ export interface ListChangesInput {
   projectDir: string
 }
 
+/**
+ * 汇总单个变更的状态
+ *
+ * 读取 tasks.md 的完成任务数和待办任务数，
+ * 结合 verifyChange 判断是否可以归档。
+ * 已归档的变更直接标记为 archived。
+ */
 async function summarizeChange(projectDir: string, rootDir: string, name: string, archived = false): Promise<ChangeSummary> {
   const normalizedName = archived ? slugify(name.replace(/^\d{4}-\d{2}-\d{2}-/, "")) : slugify(name)
   const tasksPath = path.join(rootDir, name, "tasks.md")
@@ -42,6 +50,12 @@ async function summarizeChange(projectDir: string, rootDir: string, name: string
   }
 }
 
+/**
+ * 列出项目中所有变更及状态
+ *
+ * 返回活跃变更和已归档变更的列表，
+ * 每个变更包含完成任务数、待办任务数和归档就绪状态。
+ */
 export async function listChanges(input: ListChangesInput) {
   const activeNames = (await listDirectories(changesRoot(input.projectDir))).filter((name) => name !== "archive")
   const archivedNames = await listDirectories(archiveRoot(input.projectDir))

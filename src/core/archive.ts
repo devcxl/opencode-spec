@@ -15,6 +15,16 @@ export interface ArchiveChangeInput {
   name: string
 }
 
+/**
+ * 归档已完成变更
+ *
+ * 流程：
+ * 1. 验证变更是否满足归档条件（所有任务完成、制品齐全）
+ * 2. 将 specs 同步到全局 openspec/specs/ 目录
+ * 3. 将变更目录从 openspec/changes/<slug>/ 移动到 openspec/changes/archive/<date>-<slug>/
+ *
+ * 归档前必须通过 verifyChange 检查，否则拒绝归档。
+ */
 export async function archiveChange(input: ArchiveChangeInput) {
   const slug = slugify(input.name)
   const activeDir = changeDir(input.projectDir, slug)

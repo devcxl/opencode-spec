@@ -8,6 +8,13 @@ export interface FastForwardChangeInput {
   name: string
 }
 
+/**
+ * 快速前进变更：自动按依赖顺序生成所有可生成的制品
+ *
+ * 遍历 schema 中定义的制品列表，跳过已完成的制品，
+ * 对状态为 "ready" 的制品依次调用 continueChange 生成。
+ * 如果某个制品仍处于 "blocked" 状态则抛异常。
+ */
 export async function fastForwardChange(input: FastForwardChangeInput) {
   const meta = await resolveChangeMeta(input.projectDir, input.name)
   const schema = getSchema(meta.schema)

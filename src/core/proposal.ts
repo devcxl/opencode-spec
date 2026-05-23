@@ -8,6 +8,13 @@ export interface UpdateProposalInput {
   content?: string
 }
 
+/**
+ * 更新（或创建）变更的提案文件（proposal.md）
+ *
+ * 如果文件已存在，保留原有 frontmatter（slug、createdAt）；
+ * 如果是新建，则生成新的 frontmatter。
+ * 未提供 content 时使用默认模板生成。
+ */
 export async function updateProposal(input: UpdateProposalInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)

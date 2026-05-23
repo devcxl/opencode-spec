@@ -24,6 +24,16 @@ export interface ValidateChangeResult {
   slug: string
 }
 
+/**
+ * 校验变更的完整性和正确性
+ *
+ * 检查项：
+ * - proposal.md、design.md、tasks.md 是否存在（strict 模式下缺失视为错误）
+ * - specs/ 目录下是否有 .md 文件
+ * - tasks.md 格式是否合法（ID 格式、前置零、重复等）
+ *
+ * strict 模式/requirePlanningArtifacts 模式下，缺失规划制品（proposal、design、specs）视为错误而非警告。
+ */
 export async function validateChange(input: ValidateChangeInput): Promise<ValidateChangeResult> {
   const location = await resolveChangeLocation(input.projectDir, input.name)
   if (!location) {
