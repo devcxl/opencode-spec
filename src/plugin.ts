@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { setOpenspecDir } from "./core/paths.js"
 
 /** 根据 import.meta.url 解析插件包的根目录路径 */
 export function resolvePackageRoot(metaUrl: string) {
@@ -158,11 +159,18 @@ async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
 /**
  * OpenSpec 插件工厂函数
  *
+ * @param ctx - OpenCode 插件上下文
+ * @param options - 插件配置选项，支持 `directory` 字段自定义输出目录（默认 "openspec"）
+ *
  * 注册两个钩子：
  * 1. config - 在启动时注入 skills 路径和 slash commands
  * 2. experimental.chat.messages.transform - 在每条用户消息前插入 bootstrap 提示
  */
-export const OpencodeSpec: Plugin = async (ctx) => {
+export const OpencodeSpec: Plugin = async (ctx, options) => {
+  if (options?.directory && typeof options.directory === "string" && options.directory.trim()) {
+    setOpenspecDir(options.directory.trim())
+  }
+
   const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
   const commandsDir = path.join(packageRoot, "assets", "commands")
   const skillsDir = await setupSkillsDir(sourceSkillsDir)

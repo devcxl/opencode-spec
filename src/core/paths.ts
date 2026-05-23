@@ -3,6 +3,21 @@ import path from "node:path"
 
 import { pathExists } from "./fs.js"
 
+/** OpenSpec 输出目录名，默认为 "openspec"，可通过插件 options 自定义 */
+let _openspecDir = "openspec"
+
+/** 设置 OpenSpec 输出目录名 */
+export function setOpenspecDir(dir: string) {
+  const trimmed = dir.trim()
+  if (!trimmed) throw new Error("OpenSpec 目录名不能为空")
+  _openspecDir = trimmed
+}
+
+/** 获取当前 OpenSpec 输出目录名 */
+export function getOpenspecDir() {
+  return _openspecDir
+}
+
 /** OpenSpec 插件的唯一标识 */
 export const PLUGIN_ID = "opencode-spec"
 
@@ -28,9 +43,9 @@ export function toRelativePath(projectDir: string, targetPath: string) {
   return path.relative(projectDir, targetPath).replace(/\\/g, "/")
 }
 
-/** OpenSpec 根目录：项目根下的 openspec/ */
+/** OpenSpec 根目录：项目根下的 openspec/（目录名可通过 setOpenspecDir 自定义） */
 export function openspecRoot(projectDir: string) {
-  return path.join(projectDir, "openspec")
+  return path.join(projectDir, _openspecDir)
 }
 
 /** 变更目录：openspec/changes/ */

@@ -1,7 +1,7 @@
 import { parse } from "yaml"
 
 import { readOptionalText } from "./fs.js"
-import { projectConfigPath } from "./paths.js"
+import { projectConfigPath, toRelativePath } from "./paths.js"
 import type { BuiltinSchemaName } from "./types.js"
 
 /** OpenSpec 项目配置结构 */
@@ -15,12 +15,13 @@ const DEFAULT_PROJECT_CONFIG: OpenSpecProjectConfig = {
 }
 
 /**
- * 加载项目配置文件（openspec/config.yaml）
+ * 加载项目配置文件
  *
  * 如果文件不存在、内容为空、或 schema 字段缺失，则返回默认配置。
  * 目前仅支持 "spec-driven" 这一种 schema。
  */
 export async function loadProjectConfig(projectDir: string): Promise<OpenSpecProjectConfig> {
+  const configPath = toRelativePath(projectDir, projectConfigPath(projectDir))
   const raw = await readOptionalText(projectConfigPath(projectDir))
   if (!raw?.trim()) {
     return { ...DEFAULT_PROJECT_CONFIG }
@@ -32,7 +33,7 @@ export async function loadProjectConfig(projectDir: string): Promise<OpenSpecPro
   }
 
   if (typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("openspec/config.yaml 必须是对象")
+    throw new Error(`${configPath} 必须是对象`)
   }
 
   const schema = "schema" in parsed ? parsed.schema : undefined
@@ -41,7 +42,7 @@ export async function loadProjectConfig(projectDir: string): Promise<OpenSpecPro
   }
 
   if (schema !== "spec-driven") {
-    throw new Error(`openspec/config.yaml 指定了暂不支持的 schema：${String(schema)}`)
+    throw new Error(`${configPath} 指定了暂不支持的 schema：${String(schema)}`)
   }
 
   return { schema }

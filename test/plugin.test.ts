@@ -5,11 +5,13 @@ import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { OpencodeSpec } from "../src/plugin.js"
+import { getOpenspecDir, setOpenspecDir } from "../src/core/paths.js"
 
 const tempDirs: string[] = []
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
+  setOpenspecDir("openspec")
 })
 
 async function makeTempDir() {
@@ -218,5 +220,51 @@ describe("OpencodeSpec messages transform", () => {
     await expect(
       plugin["experimental.chat.messages.transform"]?.({} as never, { messages: [] } as never),
     ).resolves.toBeUndefined()
+  })
+})
+
+describe("OpencodeSpec custom directory option", () => {
+  it("options.directory 设置后 getOpenspecDir 返回自定义值", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    const plugin = await OpencodeSpec(
+      { client: {} as never, directory: projectDir, worktree: projectDir } as never,
+      { directory: "my-custom-dir" },
+    )
+
+    expect(getOpenspecDir()).toBe("my-custom-dir")
+    expect(plugin).toBeDefined()
+  })
+
+  it("options.directory 为空字符串时保持默认值", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    const plugin = await OpencodeSpec(
+      { client: {} as never, directory: projectDir, worktree: projectDir } as never,
+      { directory: "" },
+    )
+
+    expect(getOpenspecDir()).toBe("openspec")
+    expect(plugin).toBeDefined()
+  })
+
+  it("options 未传入时保持默认值", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    const plugin = await OpencodeSpec(
+      { client: {} as never, directory: projectDir, worktree: projectDir } as never,
+    )
+
+    expect(getOpenspecDir()).toBe("openspec")
+    expect(plugin).toBeDefined()
   })
 })

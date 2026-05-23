@@ -13,11 +13,13 @@ import {
   updateDesign,
   updateTasks,
 } from "../src/core/index.ts"
+import { getOpenspecDir, openspecRoot, setOpenspecDir } from "../src/core/paths.js"
 
 const tempDirs: string[] = []
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
+  setOpenspecDir("openspec")
 })
 
 async function makeTempDir(prefix: string) {
@@ -266,5 +268,36 @@ describe("OpenSpec core workflow", () => {
         completeTaskIds: ["1.1"],
       }),
     ).rejects.toThrow(/前导零/)
+  })
+})
+
+describe("OpenSpec paths", () => {
+  it("默认目录名为 openspec", () => {
+    expect(getOpenspecDir()).toBe("openspec")
+  })
+
+  it("自定义目录名后 openspecRoot 路径更新", () => {
+    setOpenspecDir("my-specs")
+    expect(getOpenspecDir()).toBe("my-specs")
+    expect(openspecRoot("/project")).toBe("/project/my-specs")
+  })
+
+  it("setOpenspecDir 拒绝空字符串", () => {
+    expect(() => setOpenspecDir("")).toThrow("OpenSpec 目录名不能为空")
+  })
+
+  it("setOpenspecDir 拒绝只含空白字符的字符串", () => {
+    expect(() => setOpenspecDir("   ")).toThrow("OpenSpec 目录名不能为空")
+  })
+
+  it("自定义目录名后 initializeOpenSpec 创建对应目录", async () => {
+    setOpenspecDir("custom-specs")
+    const projectDir = await makeTempDir("opencode-spec-core-")
+
+    const result = await initializeOpenSpec({ projectDir })
+
+    expect(result.created).toContain("custom-specs/specs")
+    expect(result.created).toContain("custom-specs/changes")
+    expect(result.created).toContain("custom-specs/changes/archive")
   })
 })
