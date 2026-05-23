@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { setOpenspecDir } from "./core/paths.js"
+import { getOpenspecDir, setOpenspecDir } from "./core/paths.js"
 
 /** 根据 import.meta.url 解析插件包的根目录路径 */
 export function resolvePackageRoot(metaUrl: string) {
@@ -163,12 +163,14 @@ async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
  * @param options - 插件配置选项，支持 `directory` 字段自定义输出目录（默认 "openspec"）
  *
  * 注册两个钩子：
- * 1. config - 在启动时注入 skills 路径和 slash commands
+ * 1. config - 在启动时注入 skills 路径和 slash commands，并读取 openspec.directory 配置
  * 2. experimental.chat.messages.transform - 在每条用户消息前插入 bootstrap 提示
  */
 export const OpencodeSpec: Plugin = async (ctx, options) => {
   if (options?.directory && typeof options.directory === "string" && options.directory.trim()) {
-    setOpenspecDir(options.directory.trim())
+    const dir = options.directory.trim()
+    setOpenspecDir(dir)
+    process.env.OPENSPEC_DIR = dir
   }
 
   const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
@@ -181,6 +183,15 @@ export const OpencodeSpec: Plugin = async (ctx, options) => {
      */
     config: async (rawConfig) => {
       const config = rawConfig as Record<string, any>
+
+      if (getOpenspecDir() === "openspec") {
+        const openspecConfig = config.openspec as Record<string, any> | undefined
+        if (openspecConfig?.directory && typeof openspecConfig.directory === "string" && openspecConfig.directory.trim()) {
+          const dir = openspecConfig.directory.trim()
+          setOpenspecDir(dir)
+          process.env.OPENSPEC_DIR = dir
+        }
+      }
 
       config.skills = config.skills || {}
       config.skills.paths = config.skills.paths || []

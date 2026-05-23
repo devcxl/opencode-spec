@@ -27,6 +27,21 @@
 
 原因：skills 会调用 JavaScript 参考脚本，这些脚本通过 `node` 执行。
 
+### 1.1 自定义输出目录
+
+OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，使用 plugin 元组格式传入 `directory` 选项：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    ["@devcxl/opencode-spec", { "directory": "docs" }]
+  ]
+}
+```
+
+也可通过环境变量 `OPENSPEC_DIR` 指定，优先级高于配置。
+
 ### 2. 初始化 OpenSpec 目录
 
 首次接入时，直接从 `/opsx-propose` 开始，或让 Agent 调用 `openspec-propose` skill；脚本会自动创建 OpenSpec 所需目录结构。

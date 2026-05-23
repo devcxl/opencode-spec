@@ -30,6 +30,21 @@ Add to `opencode.json` at project root:
 
 Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
 
+## Configuration
+
+By default, OpenSpec outputs to the `openspec/` directory under the project root. To customize, use the plugin tuple format to pass the `directory` option:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    ["@devcxl/opencode-spec", { "directory": "docs" }]
+  ]
+}
+```
+
+You can also set the `OPENSPEC_DIR` environment variable, which takes priority over configuration.
+
 ## Workflow
 
 ```

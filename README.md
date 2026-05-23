@@ -30,6 +30,21 @@
 
 前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
 
+## 配置
+
+OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，使用 plugin 元组格式传入 `directory` 选项：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    ["@devcxl/opencode-spec", { "directory": "docs" }]
+  ]
+}
+```
+
+也可通过环境变量 `OPENSPEC_DIR` 指定，优先级高于配置。
+
 ## 工作流
 
 ```
