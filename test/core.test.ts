@@ -13,7 +13,7 @@ import {
   updateDesign,
   updateTasks,
 } from "../src/core/index.ts"
-import { getOpenspecDir, openspecRoot, setOpenspecDir } from "../src/core/paths.js"
+import { getOpenspecDir, openspecRoot, setOpenspecDir, slugify, validateSlug } from "../src/core/paths.js"
 
 const tempDirs: string[] = []
 
@@ -301,3 +301,53 @@ describe("OpenSpec paths", () => {
     expect(result.created).toContain("custom-specs/changes/archive")
   })
 })
+
+describe("slugify 和 validateSlug", () => {
+  it("slugify：纯英文输入正常转换", () => {
+    expect(slugify("Add Dark Mode")).toBe("add-dark-mode")
+    expect(slugify("Fix Bug")).toBe("fix-bug")
+    expect(slugify("  Spaces  Everywhere  ")).toBe("spaces-everywhere")
+  })
+
+  it("slugify：超长 slug 截断到 60 字符", () => {
+    const longName = "implement-comprehensive-cross-platform-synchronization-protocol-for-distributed-microservices-architecture"
+    const result = slugify(longName)
+    expect(result.length).toBeLessThanOrEqual(60)
+    expect(longName.startsWith(result.split("-")[0]!)).toBe(true)
+  })
+
+  it("slugify：空串和纯特殊字符返回 'change'", () => {
+    expect(slugify("")).toBe("change")
+    expect(slugify("!@#$%")).toBe("change")
+  })
+
+  it("validateSlug：合法的英文 kebab-case 通过并返回 slug", () => {
+    expect(validateSlug("Add Dark Mode")).toBe("add-dark-mode")
+    expect(validateSlug("Fix Order Processing Race Condition")).toBe("fix-order-processing-race-condition")
+    expect(validateSlug("my-feature")).toBe("my-feature")
+  })
+
+  it("validateSlug：中文输入被拒绝", () => {
+    expect(() => validateSlug("添加暗黑模式")).toThrow(/必须为英文/)
+  })
+
+  it("validateSlug：日文/韩文输入被拒绝", () => {
+    expect(() => validateSlug("ユーザー認証")).toThrow(/必须为英文/)
+    expect(() => validateSlug("사용자 인증")).toThrow(/必须为英文/)
+  })
+
+  it("validateSlug：混有中文和英文也被拒绝", () => {
+    expect(() => validateSlug("添加 User 认证")).toThrow(/必须为英文/)
+  })
+
+  it("validateSlug：过于简洁的输入被拒绝", () => {
+    expect(() => validateSlug("fix")).toThrow(/过于简洁/)
+    expect(() => validateSlug("AB")).toThrow(/过于简洁/)
+  })
+
+  it("validateSlug：单单词输入被拒绝", () => {
+    expect(() => validateSlug("feature")).toThrow(/至少需要 2 个单词/)
+    expect(() => validateSlug("Implementation")).toThrow(/至少需要 2 个单词/)
+  })
+})
+

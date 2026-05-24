@@ -245,15 +245,43 @@ function artifactInstruction(artifactId) {
   }
 }
 
+const MAX_SLUG_LENGTH = 60
+
 export function slugify(value) {
-  const slug = String(value ?? "")
+  let slug = String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/--+/g, "-")
 
+  if (slug.length > MAX_SLUG_LENGTH) {
+    const sliced = slug.slice(0, MAX_SLUG_LENGTH)
+    const lastDash = sliced.lastIndexOf("-")
+    slug = lastDash > MAX_SLUG_LENGTH / 2 ? sliced.slice(0, lastDash) : sliced
+  }
+
   return slug || "change"
+}
+
+export function validateSlug(value) {
+  const hasNonAscii = /[^\x00-\x7F]/.test(String(value ?? ""))
+  if (hasNonAscii) {
+    throw new Error("变更名必须为英文 kebab-case 短语，请将中文翻译为英文后再试")
+  }
+
+  const slug = slugify(value)
+  const alphaChars = slug.replace(/[^a-z0-9]/g, "")
+
+  if (alphaChars.length < 4) {
+    throw new Error(`变更名过于简洁（"${slug}"），请使用更具体的英文短语，例如 "add-user-auth" 而非 "add-auth"`)
+  }
+
+  if (!slug.includes("-")) {
+    throw new Error(`变更名至少需要 2 个单词（"${slug}"），请使用更具体的英文短语`)
+  }
+
+  return slug
 }
 
 export function toRelativePath(baseDir, targetPath) {
@@ -696,10 +724,10 @@ export async function getChangeStatus(projectDir = projectRoot, name) {
 export async function createChangeScaffold(projectDir = projectRoot, name) {
   await ensureOpenSpecStructure(projectDir)
 
-  const slug = slugify(name)
+  const slug = validateSlug(name)
   const targetDir = changeDir(projectDir, slug)
   if (await pathExists(targetDir)) {
-    throw new Error(`变更 ${slug} 已存在`)
+    throw new Error(`变更 ${slug} 已存在，请使用不同的名称`)
   }
 
   const { schema } = await readProjectConfig(projectDir)

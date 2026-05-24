@@ -24,7 +24,22 @@ When ready to implement, run /opsx-apply
  Use the **question tool** (open-ended, no preset options) to ask:
  > "What change do you want to work on? Describe what you want to build or fix."
 
- From their description, derive a kebab-case name (e.g., "add user authentication" → `add-user-auth`).
+ From their description, derive an **English kebab-case name** that is **specific and descriptive**:
+
+ **Naming Rules (MANDATORY)**:
+ - **Must be in English** — if the user provides Chinese/Japanese/Korean input, translate it to English first
+ - **Minimum 3 meaningful words** — avoid overly generic names
+ - **Be specific about what is being changed** — prefer `add-oauth2-login-flow` over `add-login`, prefer `fix-race-condition-in-order-processing` over `fix-bug`
+ - **Maximum 8 words** — keep it concise but descriptive
+ - **Use lowercase kebab-case** — words separated by hyphens
+
+ **Examples**:
+ | User Input | Good Name | Bad Name (too generic) |
+ |------------|-----------|------------------------|
+ | "添加用户认证" | `add-user-authentication` | `add-auth` |
+ | "修复订单处理的竞态条件" | `fix-order-processing-race-condition` | `fix-bug` |
+ | "Improve error handling in API" | `improve-api-error-handling` | `improve-api` |
+ | "Add Dark Mode" | `add-dark-mode-support` | `dark-mode` |
 
  **IMPORTANT**: Do NOT proceed without understanding what the user wants to build.
 
