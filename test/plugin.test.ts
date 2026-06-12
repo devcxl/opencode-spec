@@ -300,6 +300,7 @@ describe("OpencodeSpec custom directory option", () => {
         { directory: "options-dir" },
       )
       expect(getOpenspecDir()).toBe("env-wins")
+      expect(process.env.OPENSPEC_DIR).toBe("env-wins")
       expect(plugin).toBeDefined()
     } finally {
       delete process.env.OPENSPEC_DIR
@@ -320,6 +321,7 @@ describe("OpencodeSpec custom directory option", () => {
       const config = { openspec: { directory: "config-dir" } } as Record<string, any>
       await plugin.config?.(config)
       expect(getOpenspecDir()).toBe("env-wins")
+      expect(process.env.OPENSPEC_DIR).toBe("env-wins")
     } finally {
       delete process.env.OPENSPEC_DIR
     }

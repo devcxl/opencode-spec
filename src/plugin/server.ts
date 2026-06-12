@@ -27,8 +27,8 @@ export function createOpencodeSpec(packageRoot: string): Plugin {
       const dir = options.directory.trim()
       if (!process.env.OPENSPEC_DIR?.trim()) {
         setOpenspecDir(dir)
+        process.env.OPENSPEC_DIR = dir
       }
-      process.env.OPENSPEC_DIR = dir
     }
 
     const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
@@ -46,8 +46,10 @@ export function createOpencodeSpec(packageRoot: string): Plugin {
           const openspecConfig = config.openspec as Record<string, any> | undefined
           if (openspecConfig?.directory && typeof openspecConfig.directory === "string" && openspecConfig.directory.trim()) {
             const dir = openspecConfig.directory.trim()
-            setOpenspecDir(dir)
-            process.env.OPENSPEC_DIR = dir
+            if (!process.env.OPENSPEC_DIR?.trim()) {
+              setOpenspecDir(dir)
+              process.env.OPENSPEC_DIR = dir
+            }
           }
         }
 
