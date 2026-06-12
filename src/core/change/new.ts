@@ -1,9 +1,9 @@
 import { mkdir } from "node:fs/promises"
 
 import { formatProposalWithFrontmatter } from "./change.js"
-import { loadProjectConfig } from "./config.js"
-import { pathExists, writeText } from "./fs.js"
-import { changeDir, changeSpecsDir, ensureOpenSpecStructure, proposalPath, toRelativePath, validateSlug } from "./paths.js"
+import { loadProjectConfig } from "../project/config.js"
+import { pathExists, writeText } from "../../util/fs.js"
+import { changeDir, changeSpecsDir, ensureOpenSpecStructure, proposalPath, toRelativePath, validateSlug } from "../../util/paths.js"
 
 export interface CreateChangeScaffoldInput {
   projectDir: string

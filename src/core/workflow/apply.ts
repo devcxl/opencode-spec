@@ -8,8 +8,8 @@ import {
   readOptionalText,
   slugify,
   writeText,
-} from "./common.js"
-import { toRelativePath } from "./paths.js"
+} from "../../util/common.js"
+import { toRelativePath } from "../../util/paths.js"
 
 export interface PrepareApplyInput {
   projectDir: string

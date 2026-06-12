@@ -1,8 +1,8 @@
 import path from "node:path"
 
-import { resolveChangeLocation } from "./change.js"
-import { listFilesRecursive, pathExists, readOptionalText } from "./fs.js"
-import { parseTasks, validateTasksMarkdown } from "./tasks-format.js"
+import { resolveChangeLocation } from "../change/change.js"
+import { listFilesRecursive, pathExists, readOptionalText } from "../../util/fs.js"
+import { parseTasks, validateTasksMarkdown } from "../../util/tasks-format.js"
 
 export interface ValidateChangeInput {
   projectDir: string

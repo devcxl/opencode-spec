@@ -1,8 +1,8 @@
 import { parse } from "yaml"
 
-import { readOptionalText } from "./fs.js"
-import { projectConfigPath, toRelativePath } from "./paths.js"
-import type { BuiltinSchemaName } from "./types.js"
+import { readOptionalText } from "../../util/fs.js"
+import { projectConfigPath, toRelativePath } from "../../util/paths.js"
+import type { BuiltinSchemaName } from "../model/types.js"
 
 /** OpenSpec 项目配置结构 */
 export interface OpenSpecProjectConfig {

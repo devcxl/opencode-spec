@@ -1,14 +1,14 @@
 import { rename } from "node:fs/promises"
 import path from "node:path"
 
-import { datedArchiveChangeDir, toRelativePath } from "./paths.js"
+import { datedArchiveChangeDir, toRelativePath } from "../util/paths.js"
 import { syncChangeSpecs } from "./sync.js"
-import { verifyChange } from "./verify.js"
+import { verifyChange } from "../core/workflow/verify.js"
 import {
   changeDir,
   pathExists,
   slugify,
-} from "./common.js"
+} from "../util/common.js"
 
 export interface ArchiveChangeInput {
   projectDir: string

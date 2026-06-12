@@ -1,7 +1,7 @@
 import path from "node:path"
 
-import { changeDir, getTemplate, pathExists, renderTemplate, slugify, writeText } from "./common.js"
-import { changeSpecsDir, toRelativePath } from "./paths.js"
+import { changeDir, getTemplate, pathExists, renderTemplate, slugify, writeText } from "../../util/common.js"
+import { changeSpecsDir, toRelativePath } from "../../util/paths.js"
 
 export interface UpdateSpecsInput {
   projectDir: string

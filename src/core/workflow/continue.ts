@@ -1,12 +1,12 @@
-import { getSchema } from "./schema.js"
-import { resolveChangeMeta } from "./change.js"
-import { getArtifactStatus } from "./status.js"
-import { updateDesign } from "./design.js"
-import { updateProposal } from "./proposal.js"
-import { updateTasks } from "./tasks.js"
-import { updateSpecs } from "./specs.js"
-import type { ArtifactId } from "./types.js"
-import { getArtifactInstructions } from "./instructions.js"
+import { getSchema } from "../model/schema.js"
+import { resolveChangeMeta } from "../change/change.js"
+import { getArtifactStatus } from "../change/status.js"
+import { updateDesign } from "../artifact/design.js"
+import { updateProposal } from "../artifact/proposal.js"
+import { updateTasks } from "../artifact/tasks.js"
+import { updateSpecs } from "../artifact/specs.js"
+import type { ArtifactId } from "../model/types.js"
+import { getArtifactInstructions } from "../artifact/instructions.js"
 
 export interface ContinueChangeInput {
   projectDir: string

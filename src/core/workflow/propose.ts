@@ -1,9 +1,9 @@
 import { fastForwardChange } from "./ff.js"
-import { createChangeScaffold } from "./new.js"
-import { updateDesign } from "./design.js"
-import { updateProposal } from "./proposal.js"
-import { updateSpecs } from "./specs.js"
-import { updateTasks } from "./tasks.js"
+import { createChangeScaffold } from "../change/new.js"
+import { updateDesign } from "../artifact/design.js"
+import { updateProposal } from "../artifact/proposal.js"
+import { updateSpecs } from "../artifact/specs.js"
+import { updateTasks } from "../artifact/tasks.js"
 
 export interface ProposeChangeInput {
   projectDir: string

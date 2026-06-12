@@ -1,11 +1,11 @@
 import path from "node:path"
 
 import { resolveChangeLocation, resolveChangeMeta } from "./change.js"
-import { listFilesRecursive, pathExists } from "./fs.js"
-import { getArtifactDefinition, getSchema } from "./schema.js"
-import { toRelativePath } from "./paths.js"
-import type { ChangeMeta } from "./types.js"
-import type { ArtifactId, ArtifactStatus, ChangeStatus } from "./types.js"
+import { listFilesRecursive, pathExists } from "../../util/fs.js"
+import { getArtifactDefinition, getSchema } from "../model/schema.js"
+import { toRelativePath } from "../../util/paths.js"
+import type { ChangeMeta } from "../model/types.js"
+import type { ArtifactId, ArtifactStatus, ChangeStatus } from "../model/types.js"
 
 /** 解析变更的基准目录路径 */
 async function resolveChangeBaseDir(projectDir: string, slug: string) {

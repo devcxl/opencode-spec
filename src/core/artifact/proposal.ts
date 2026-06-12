@@ -1,6 +1,6 @@
-import { formatProposalWithFrontmatter, readProposalFrontmatter } from "./change.js"
-import { changeDir, getTemplate, pathExists, readOptionalText, renderTemplate, slugify, writeText } from "./common.js"
-import { proposalPath, toRelativePath } from "./paths.js"
+import { formatProposalWithFrontmatter, readProposalFrontmatter } from "../change/change.js"
+import { changeDir, getTemplate, pathExists, readOptionalText, renderTemplate, slugify, writeText } from "../../util/common.js"
+import { proposalPath, toRelativePath } from "../../util/paths.js"
 
 export interface UpdateProposalInput {
   projectDir: string

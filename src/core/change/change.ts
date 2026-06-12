@@ -2,15 +2,15 @@ import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import { parse } from "yaml"
 
-import { loadProjectConfig } from "./config.js"
-import { pathExists, readOptionalText } from "./fs.js"
+import { loadProjectConfig } from "../project/config.js"
+import { pathExists, readOptionalText } from "../../util/fs.js"
 import {
   archiveRoot,
   archiveChangeDir,
   changeDir,
   slugify,
-} from "./paths.js"
-import type { ChangeMeta } from "./types.js"
+} from "../../util/paths.js"
+import type { ChangeMeta } from "../model/types.js"
 
 /** 变更在磁盘上的位置信息 */
 interface ChangeLocation {

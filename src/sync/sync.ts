@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 
-import { resolveChangeLocation } from "./change.js"
-import { listFilesRecursive, writeText } from "./fs.js"
-import { specsRoot, toRelativePath } from "./paths.js"
-import { validateChange } from "./validate.js"
+import { resolveChangeLocation } from "../core/change/change.js"
+import { listFilesRecursive, writeText } from "../util/fs.js"
+import { specsRoot, toRelativePath } from "../util/paths.js"
+import { validateChange } from "../core/workflow/validate.js"
 
 export interface SyncChangeSpecsInput {
   projectDir: string
