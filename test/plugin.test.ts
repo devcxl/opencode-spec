@@ -11,6 +11,7 @@ const tempDirs: string[] = []
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
+  delete process.env.OPENSPEC_DIR
   setOpenspecDir("openspec")
 })
 
@@ -266,5 +267,23 @@ describe("OpencodeSpec custom directory option", () => {
 
     expect(getOpenspecDir()).toBe("openspec")
     expect(plugin).toBeDefined()
+  })
+
+  it("OPENSPEC_DIR 环境变量设置后 getOpenspecDir 返回环境变量值", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    process.env.OPENSPEC_DIR = "env-spec-dir"
+    try {
+      const plugin = await OpencodeSpec(
+        { client: {} as never, directory: projectDir, worktree: projectDir } as never,
+      )
+      expect(getOpenspecDir()).toBe("env-spec-dir")
+      expect(plugin).toBeDefined()
+    } finally {
+      delete process.env.OPENSPEC_DIR
+    }
   })
 })

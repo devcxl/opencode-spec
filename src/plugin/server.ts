@@ -17,9 +17,17 @@ import { setupSkillsDir } from "./skills.js"
  */
 export function createOpencodeSpec(packageRoot: string): Plugin {
   return async (_ctx, options) => {
+    // 优先级：env > options > config > default
+    const envDir = process.env.OPENSPEC_DIR?.trim()
+    if (envDir) {
+      setOpenspecDir(envDir)
+    }
+
     if (options?.directory && typeof options.directory === "string" && options.directory.trim()) {
       const dir = options.directory.trim()
-      setOpenspecDir(dir)
+      if (!process.env.OPENSPEC_DIR?.trim()) {
+        setOpenspecDir(dir)
+      }
       process.env.OPENSPEC_DIR = dir
     }
 
