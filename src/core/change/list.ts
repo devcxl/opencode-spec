@@ -1,9 +1,9 @@
 import path from "node:path"
 
 import { resolveChangeMeta } from "./change.js"
-import { archiveRoot, changeDir, changesRoot, listDirectories, parseTasks, readOptionalText, slugify } from "./common.js"
-import { toRelativePath } from "./paths.js"
-import { verifyChange } from "./verify.js"
+import { archiveRoot, changeDir, changesRoot, listDirectories, parseTasks, readOptionalText, slugify } from "../../util/common.js"
+import { toRelativePath } from "../../util/paths.js"
+import { verifyChange } from "../workflow/verify.js"
 
 /** 变更概要信息 */
 export interface ChangeSummary {

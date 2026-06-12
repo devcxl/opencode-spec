@@ -1,12 +1,12 @@
 import path from "node:path"
 
-import { readOptionalText } from "./fs.js"
-import { getTemplate, renderTemplate } from "./templates.js"
-import { getArtifactDefinition } from "./schema.js"
-import { resolveChangeMeta } from "./change.js"
-import { detectArtifactPaths, getArtifactStatus } from "./status.js"
-import type { ArtifactId } from "./types.js"
-import { changeDir, toRelativePath } from "./paths.js"
+import { readOptionalText } from "../../util/fs.js"
+import { getTemplate, renderTemplate } from "../../util/templates.js"
+import { getArtifactDefinition } from "../model/schema.js"
+import { resolveChangeMeta } from "../change/change.js"
+import { detectArtifactPaths, getArtifactStatus } from "../change/status.js"
+import type { ArtifactId } from "../model/types.js"
+import { changeDir, toRelativePath } from "../../util/paths.js"
 
 export interface GetArtifactInstructionsInput {
   projectDir: string

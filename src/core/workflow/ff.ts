@@ -1,6 +1,6 @@
-import { getSchema } from "./schema.js"
-import { resolveChangeMeta } from "./change.js"
-import { getArtifactStatus } from "./status.js"
+import { getSchema } from "../model/schema.js"
+import { resolveChangeMeta } from "../change/change.js"
+import { getArtifactStatus } from "../change/status.js"
 import { continueChange } from "./continue.js"
 
 export interface FastForwardChangeInput {

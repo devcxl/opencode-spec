@@ -1,7 +1,5 @@
-import path from "node:path"
-
-import { changeDir, getTemplate, pathExists, renderTemplate, slugify, validateTasksMarkdown, writeText } from "./common.js"
-import { toRelativePath } from "./paths.js"
+import { changeDir, getTemplate, pathExists, renderTemplate, slugify, validateTasksMarkdown, writeText } from "../../util/common.js"
+import { tasksPath, toRelativePath } from "../../util/paths.js"
 
 export interface UpdateTasksInput {
   projectDir: string
@@ -18,7 +16,7 @@ export interface UpdateTasksInput {
 export async function updateTasks(input: UpdateTasksInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)
-  const filePath = path.join(targetDir, "tasks.md")
+  const filePath = tasksPath(input.projectDir, slug)
 
   if (!(await pathExists(targetDir))) {
     throw new Error(`未找到变更 ${slug}`)

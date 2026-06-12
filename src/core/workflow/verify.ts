@@ -1,5 +1,5 @@
-import { readOptionalText } from "./fs.js"
-import { parseTasks } from "./tasks-format.js"
+import { readOptionalText } from "../../util/fs.js"
+import { parseTasks } from "../../util/tasks-format.js"
 import { validateChange } from "./validate.js"
 
 export interface VerifyChangeInput {

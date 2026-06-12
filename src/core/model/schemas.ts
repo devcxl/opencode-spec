@@ -1,4 +1,4 @@
-import { loadProjectConfig } from "./config.js"
+import { loadProjectConfig } from "../project/config.js"
 import { getSchema } from "./schema.js"
 
 /**
