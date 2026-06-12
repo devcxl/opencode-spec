@@ -286,4 +286,42 @@ describe("OpencodeSpec custom directory option", () => {
       delete process.env.OPENSPEC_DIR
     }
   })
+
+  it("环境变量优先级高于 options.directory", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    process.env.OPENSPEC_DIR = "env-wins"
+    try {
+      const plugin = await OpencodeSpec(
+        { client: {} as never, directory: projectDir, worktree: projectDir } as never,
+        { directory: "options-dir" },
+      )
+      expect(getOpenspecDir()).toBe("env-wins")
+      expect(plugin).toBeDefined()
+    } finally {
+      delete process.env.OPENSPEC_DIR
+    }
+  })
+
+  it("环境变量优先级高于 config.openspec.directory", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    process.env.OPENSPEC_DIR = "env-wins"
+    try {
+      const plugin = await OpencodeSpec(
+        { client: {} as never, directory: projectDir, worktree: projectDir } as never,
+      )
+      const config = { openspec: { directory: "config-dir" } } as Record<string, any>
+      await plugin.config?.(config)
+      expect(getOpenspecDir()).toBe("env-wins")
+    } finally {
+      delete process.env.OPENSPEC_DIR
+    }
+  })
 })
