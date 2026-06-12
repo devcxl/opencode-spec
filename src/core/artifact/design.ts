@@ -1,7 +1,5 @@
-import path from "node:path"
-
 import { changeDir, getTemplate, pathExists, renderTemplate, slugify, writeText } from "../../util/common.js"
-import { toRelativePath } from "../../util/paths.js"
+import { designPath, toRelativePath } from "../../util/paths.js"
 
 export interface UpdateDesignInput {
   projectDir: string
@@ -17,7 +15,7 @@ export interface UpdateDesignInput {
 export async function updateDesign(input: UpdateDesignInput) {
   const slug = slugify(input.name)
   const targetDir = changeDir(input.projectDir, slug)
-  const filePath = path.join(targetDir, "design.md")
+  const filePath = designPath(input.projectDir, slug)
 
   if (!(await pathExists(targetDir))) {
     throw new Error(`未找到变更 ${slug}`)
