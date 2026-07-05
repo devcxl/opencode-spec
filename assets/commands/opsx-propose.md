@@ -18,3 +18,8 @@ node .opencode/skills/openspec-propose/references/status.js "$ARGUMENTS"
 3. 阅读依赖文件后补全 `proposal.md`、`specs/*.md`、`design.md`、`tasks.md`
 4. 保持 proposal / specs / design / tasks 一致
 5. 对非 trivial 变更，不要跳过这些 planning artifacts 直接实现
+
+**命名规则：**
+- 必须使用英文 kebab-case（中文需翻译）
+- 至少 3 个有意义的单词，最多 8 个
+- 例如："添加用户认证" → `add-user-authentication`

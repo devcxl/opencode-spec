@@ -138,6 +138,138 @@ If the user mentions a change or you detect one is relevant:
 
 ---
 
+## Handling Different Entry Points
+
+**User brings a vague idea:**
+```
+User: 我在考虑加实时协作功能
+
+You: 实时协作是个大话题...看看这个
+
+      COLLABORATION SPECTRUM
+      ════════════════════════════════════════════
+
+      Awareness          Coordination         Sync
+          │                   │                 │
+          ▼                   ▼                 ▼
+      ┌────────┐         ┌────────┐        ┌────────┐
+      │Presence│         │Cursors │        │  CRDT  │
+      │  "3    │         │ Multi  │        │Conflict│
+      │online" │         │ select │        │  free  │
+      └────────┘         └────────┘        └────────┘
+          │                   │                 │
+       trivial            moderate           complex
+
+      你的想法在哪个范围？
+```
+
+**User brings a specific problem:**
+```
+User: 认证系统太乱了
+
+You: [浏览代码]
+
+     ┌─────────────────────────────────────────────┐
+     │              CURRENT AUTH FLOW              │
+     └─────────────────────────────────────────────┘
+                        │
+          ┌─────────────┼─────────────┐
+          ▼             ▼             ▼
+     ┌─────────┐  ┌─────────┐  ┌─────────┐
+     │ Google  │  │  GitHub │  │  Email  │
+     │  OAuth  │  │  OAuth  │  │  Magic  │
+     └────┬────┘  └────┬────┘  └────┬────┘
+          │             │             │
+          └─────────────┼─────────────┘
+                        ▼
+                  ┌───────────┐
+                  │  Session  │
+                  └─────┬─────┘
+                        │
+                        ▼
+                  ┌───────────┐
+                  │   Perms   │
+                  └───────────┘
+
+     三个缠结点，哪个是最头疼的？
+```
+
+**User is stuck mid-implementation:**
+```
+User: /opsx-explore add-auth-system
+      OAuth 集成比想象中复杂
+
+You: [阅读变更 artifact]
+
+     你在任务 4: "Implement OAuth flow"
+
+     让我梳理一下涉及的内容...
+
+     [画图、探索选项、建议路径]
+
+     要更新设计文档吗？还是加一个 spike 任务来调研？
+```
+
+**User wants to compare options:**
+```
+User: 应该用 Postgres 还是 SQLite？
+
+You: 看上下文吧  <什么场景？>
+
+User: 一个跟踪本地开发环境的 CLI 工具
+
+You: 那就完全不一样了。
+
+     ┌─────────────────────────────────────────────────┐
+     │          CLI TOOL DATA STORAGE                  │
+     └─────────────────────────────────────────────────┘
+
+     关键约束：
+     • 不需要后台进程
+     • 必须离线工作
+     • 单用户
+
+                  SQLite          Postgres
+     部署方式    embedded ✓       needs server ✗
+     离线        yes ✓           no ✗
+     单文件      yes ✓           no ✗
+
+     SQLite，毫无悬念。
+
+     除非...有同步需求？
+```
+
+---
+
+## Ending Discovery
+
+探索没有强制性的结束方式。可能会：
+
+- **流向 proposal**: "有思路了？我可以创建一个变更 proposal。"
+- **更新 artifact**: "已把决策更新到 design.md"
+- **清晰了就停**: 用户得到了所需，继续前进
+- **以后继续**: "随时可以继续讨论"
+
+当事情逐渐清晰时，可以总结：
+
+```
+## 我们明确了什么
+
+**问题**: [明确的理解]
+
+**方案**: [如果已经出现]
+
+**开放问题**: [如果还有]
+
+**下一步**（如果准备好了）：
+- 创建变更 proposal
+- 继续探索：随时可以继续聊
+```
+
+但这个总结是可选的。有时候思考本身就是价值。
+
+---
+
 ## Guardrails
 
 - **Don't implement** - Never write code or implement features. Creating OpenSpec artifacts is fine, writing application code is not.
