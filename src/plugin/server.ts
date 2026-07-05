@@ -2,7 +2,8 @@ import type { Plugin } from "@opencode-ai/plugin"
 import path from "node:path"
 
 import { getOpenspecDir, setOpenspecDir } from "../util/paths.js"
-import { getBootstrapContent } from "./bootstrap.js"
+import { initPrompts } from "./prompts.js"
+import { initBootstrap, getBootstrapContent } from "./bootstrap.js"
 import { loadCommands } from "./commands.js"
 import { setupSkillsDir } from "./skills.js"
 
@@ -16,7 +17,7 @@ import { setupSkillsDir } from "./skills.js"
  * 2. experimental.chat.messages.transform - 在每条用户消息前插入 bootstrap 提示
  */
 export function createOpencodeSpec(packageRoot: string): Plugin {
-  return async (_ctx, options) => {
+  return async (ctx, options) => {
     // 优先级：env > options > config > default
     const envDir = process.env.OPENSPEC_DIR?.trim()
     if (envDir) {
@@ -34,6 +35,11 @@ export function createOpencodeSpec(packageRoot: string): Plugin {
     const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
     const commandsDir = path.join(packageRoot, "assets", "commands")
     const skillsDir = await setupSkillsDir(sourceSkillsDir)
+
+    const projectDir = ctx.worktree || ctx.directory
+
+    await initPrompts(packageRoot, projectDir)
+    await initBootstrap()
 
     return {
       /**

@@ -1,15 +1,18 @@
-/** bootstrap 消息缓存 */
+import { loadPrompt } from "./prompts.js"
+
 let _bootstrapCache: string | undefined
 
-/**
- * 生成每次对话注入的 bootstrap 提示消息
- *
- * 该消息告知用户 OpenSpec 工作流已启用以及可用的 slash command。
- */
-export function getBootstrapContent(): string {
-  if (_bootstrapCache !== undefined) return _bootstrapCache
+export async function initBootstrap() {
+  const content = await loadPrompt("bootstrap")
+  _bootstrapCache = content || undefined
+}
 
-  _bootstrapCache = `<EXTREMELY_IMPORTANT>
+export function resetBootstrap() {
+  _bootstrapCache = undefined
+}
+
+// Source of truth: DEFAULT_PROMPTS.bootstrap in prompts.ts
+const FALLBACK = `<EXTREMELY_IMPORTANT>
 OpenSpec 工作流已启用。
 
 你可以使用以下 slash commands：
@@ -20,6 +23,11 @@ OpenSpec 工作流已启用。
 
 推荐流程：proposal → specs → design → tasks → apply → archive
 </EXTREMELY_IMPORTANT>`
+
+export function getBootstrapContent(): string {
+  if (_bootstrapCache === undefined) {
+    return FALLBACK
+  }
 
   return _bootstrapCache
 }
