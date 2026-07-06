@@ -581,6 +581,15 @@ async function resolveArchivedChangeLocation(projectDir, slug) {
     return null
   }
 
+  const matchesArchivedSlug = (entryName) => {
+    if (entryName === slug) {
+      return true
+    }
+
+    const datedMatch = entryName.match(/^\d{4}-\d{2}-\d{2}-(.+)$/)
+    return datedMatch?.[1] === slug
+  }
+
   const entries = await readdir(archivedRoot, { withFileTypes: true })
   for (const entry of entries) {
     if (!entry.isDirectory()) {
@@ -588,7 +597,7 @@ async function resolveArchivedChangeLocation(projectDir, slug) {
     }
 
     const dirPath = path.join(archivedRoot, entry.name)
-    if (entry.name === slug || entry.name.endsWith(`-${slug}`)) {
+    if (matchesArchivedSlug(entry.name)) {
       return {
         dirPath,
         slug,

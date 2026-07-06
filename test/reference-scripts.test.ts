@@ -6,6 +6,8 @@ import { promisify } from "node:util"
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
+import { resolveChangeLocation } from "../assets/skills/_shared/references/openspec.js"
+
 const execFileAsync = promisify(execFile)
 const tempDirs: string[] = []
 
@@ -129,5 +131,23 @@ describe("reference scripts", () => {
     expect(String(archived.archivedTo)).toMatch(/openspec\/changes\/archive\/\d{4}-\d{2}-\d{2}-archive-change/)
     expect(archived.specsMergedTo).toEqual(["openspec/specs/archive-change/spec.md"])
     expect(await exists(path.join(projectDir, "openspec", "specs", "archive-change", "spec.md"))).toBe(true)
+  })
+
+  it("archived change lookup does not match suffix-only slugs", async () => {
+    const projectDir = await createWorkspace()
+    const archiveDir = path.join(projectDir, "openspec", "changes", "archive", "2026-01-01-add-user-auth")
+    await mkdir(archiveDir, { recursive: true })
+    await writeFile(
+      path.join(archiveDir, "proposal.md"),
+      '---\nslug: "add-user-auth"\ncreatedAt: "2026-01-01T00:00:00.000Z"\n---\n\n# Proposal\n',
+      "utf8",
+    )
+
+    await expect(resolveChangeLocation(projectDir, "add-user-auth")).resolves.toMatchObject({
+      dirPath: archiveDir,
+      slug: "add-user-auth",
+      status: "archived",
+    })
+    await expect(resolveChangeLocation(projectDir, "user-auth")).resolves.toBeNull()
   })
 })
