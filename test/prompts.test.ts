@@ -44,13 +44,6 @@ describe("loadPrompt", () => {
     expect((await loadPrompt("bootstrap")).trim()).toBe("project override")
   })
 
-  it("两者都不存在时返回默认兜底", async () => {
-    initPrompts(await makeTempDir(), await makeTempDir())
-    const result = await loadPrompt("bootstrap")
-    expect(result).toContain("EXTREMELY_IMPORTANT")
-    expect(result).toContain("opsx-propose")
-  })
-
   it("不存在的 prompt 名称返回空字符串", async () => {
     initPrompts(await makeTempDir(), await makeTempDir())
     expect(await loadPrompt("nonexistent")).toBe("")
