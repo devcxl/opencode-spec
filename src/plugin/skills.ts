@@ -2,14 +2,17 @@ import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
-/**
- * 在临时目录中复制并处理 skills 目录
- *
- * SKILL.md 中的路径占位符 .opencode/skills/ 会被替换为实际的临时目录路径。
- * 进程退出时自动清理临时目录。
- */
+const _tempDirs = new Set<string>()
+
+process.once("exit", () => {
+  for (const dir of _tempDirs) {
+    rm(dir, { recursive: true, force: true }).catch(() => {})
+  }
+})
+
 export async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
   const baseDir = await mkdtemp(path.join(tmpdir(), "opencode-spec-skills-"))
+  _tempDirs.add(baseDir)
   const destDir = path.join(baseDir, "skills")
 
   await cp(sourceSkillsDir, destDir, { recursive: true })
@@ -31,10 +34,6 @@ export async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
   }
 
   await processDir(destDir)
-
-  process.on("exit", () => {
-    rm(baseDir, { recursive: true, force: true }).catch(() => {})
-  })
 
   return destDir
 }

@@ -5,7 +5,7 @@ import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 import { OpencodeSpec } from "../src/plugin.js"
-import { getOpenspecDir, setOpenspecDir } from "../src/core/paths.js"
+import { getOpenspecDir, setOpenspecDir } from "../src/util/paths.js"
 
 const tempDirs: string[] = []
 

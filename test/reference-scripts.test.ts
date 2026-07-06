@@ -4,10 +4,16 @@ import path from "node:path"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
 
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 const execFileAsync = promisify(execFile)
 const tempDirs: string[] = []
+
+const _origOpenspecDir = process.env.OPENSPEC_DIR
+
+beforeEach(() => {
+  delete process.env.OPENSPEC_DIR
+})
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))

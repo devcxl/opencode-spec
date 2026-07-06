@@ -1,5 +1,7 @@
-import { access, readFile } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import path from "node:path"
+
+import { pathExists } from "../util/fs.js"
 
 let _packageRoot = ""
 let _projectDir = ""
@@ -7,15 +9,6 @@ let _projectDir = ""
 export function initPrompts(packageRoot: string, projectDir: string) {
   _packageRoot = packageRoot
   _projectDir = projectDir
-}
-
-async function pathExists(targetPath: string) {
-  try {
-    await access(targetPath)
-    return true
-  } catch {
-    return false
-  }
 }
 
 const DEFAULT_PROMPTS: Record<string, string> = {
