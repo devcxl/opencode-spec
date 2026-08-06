@@ -150,4 +150,32 @@ describe("reference scripts", () => {
     })
     await expect(resolveChangeLocation(projectDir, "user-auth")).resolves.toBeNull()
   })
+
+  it("archive --instructions 返回正确的 JSON 结构", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Instruct Change"])
+
+    const result = await runJson(projectDir, ".opencode/skills/openspec-archive/references/archive.js", [
+      "--change=instruct-change",
+      "--instructions",
+    ])
+
+    expect(result).toHaveProperty("archive", "instruct-change")
+    expect(result).toHaveProperty("context")
+    expect(result).toHaveProperty("operationGuidance")
+    expect(result).toHaveProperty("schema")
+    expect(result).toHaveProperty("schemaName")
+  })
+
+  it("skip_specs: true 时 specs 状态为 skipped", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Skip Specs Change"])
+
+    const baseDir = path.join(projectDir, "openspec", "changes", "skip-specs-change")
+    await writeFile(path.join(baseDir, ".openspec.yaml"), "skip_specs: true\n", "utf8")
+
+    const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["skip-specs-change"])
+    const specsArtifact = (status.artifacts as Array<{ id: string; state: string }>).find((a) => a.id === "specs")
+    expect(specsArtifact?.state).toBe("skipped")
+  })
 })
