@@ -1,15 +1,19 @@
-# Design: {{name}}
+## Context
 
-## Overview
+<!-- Current state and constraints that shape the approach. See proposal.md for motivation - don't restate it -->
 
-## Goals
+## Goals / Non-Goals
 
-## Constraints
+**Goals:**
+<!-- What this design aims to achieve -->
 
-## Technical Approach
+**Non-Goals:**
+<!-- What is explicitly out of scope -->
 
-## Alternatives Considered
+## Decisions
 
-## Impacted Files / Modules
+<!-- Key design decisions with rationale and alternatives considered -->
 
-## Risks and Mitigations
+## Risks / Trade-offs
+
+<!-- Known risks and trade-offs -->

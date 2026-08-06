@@ -1,7 +1,11 @@
-# Spec: {{name}}
+## Purpose
+<!-- New capabilities only: one or two sentences (50+ characters) on what this capability is for. Delete this section for an existing capability. -->
 
-## Requirements
+## ADDED Requirements
 
-## Behavior
+### Requirement: <!-- requirement name -->
+<!-- requirement text -->
 
-## Acceptance Criteria
+#### Scenario: <!-- scenario name -->
+- **WHEN** <!-- condition -->
+- **THEN** <!-- expected outcome -->

@@ -1,7 +1,9 @@
-# Tasks: {{name}}
+## 1. <!-- Task Group Name -->
 
-## Implementation
-- [ ] 1.1 完成实现
+- [ ] 1.1 <!-- Task description -->
+- [ ] 1.2 <!-- Task description -->
 
-## Verification
-- [ ] 2.1 完成验证
+## 2. <!-- Task Group Name -->
+
+- [ ] 2.1 <!-- Task description -->
+- [ ] 2.2 <!-- Task description -->
