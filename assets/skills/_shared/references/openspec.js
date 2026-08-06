@@ -4,50 +4,71 @@ import path from "node:path"
 export const projectRoot = process.cwd()
 
 const DEFAULT_TEMPLATES = {
-  proposal: `# Proposal: {{name}}
+  proposal: `## Why
 
-## Summary
+<!-- Explain the motivation for this change. What problem does this solve? Why now? -->
 
-## Motivation
+## What Changes
 
-## Scope
+<!-- Describe what will change. Be specific about new capabilities, modifications, or removals. -->
 
-## Non-Goals
+## Capabilities
 
-## Risks
-`,
-  design: `# Design: {{name}}
+### New Capabilities
+<!-- Capabilities being introduced. Use kebab-case for path segments you introduce
+     (e.g., user-auth or identity/user-auth) that follow the project's existing
+     spec organization. Each creates specs/<capability-path>/spec.md. -->
+- \`<capability-path>\`: <brief description of what this capability covers>
 
-## Overview
+### Modified Capabilities
+<!-- Existing capabilities whose REQUIREMENTS are changing (not just implementation).
+     Only list here if spec-level behavior changes. Each needs a delta spec file.
+     Use the exact existing path under openspec/specs/. Leave empty if no requirement
+     changes. -->
+- \`<existing-capability-path>\`: <what requirement is changing>
 
-## Goals
+## Impact
 
-## Constraints
+<!-- Affected code, APIs, dependencies, systems -->`,
+  design: `## Context
 
-## Technical Approach
+<!-- Current state and constraints that shape the approach. See proposal.md for motivation - don't restate it -->
 
-## Alternatives Considered
+## Goals / Non-Goals
 
-## Impacted Files / Modules
+**Goals:**
+<!-- What this design aims to achieve -->
 
-## Risks and Mitigations
-`,
-  tasks: `# Tasks: {{name}}
+**Non-Goals:**
+<!-- What is explicitly out of scope -->
 
-## Implementation
-- [ ] 1.1 完成实现
+## Decisions
 
-## Verification
-- [ ] 2.1 完成验证
-`,
-  spec: `# Spec: {{name}}
+<!-- Key design decisions with rationale and alternatives considered -->
 
-## Requirements
+## Risks / Trade-offs
 
-## Behavior
+<!-- Known risks and trade-offs -->`,
+  tasks: `## 1. <!-- Task Group Name -->
 
-## Acceptance Criteria
-`,
+- [ ] 1.1 <!-- Task description -->
+- [ ] 1.2 <!-- Task description -->
+
+## 2. <!-- Task Group Name -->
+
+- [ ] 2.1 <!-- Task description -->
+- [ ] 2.2 <!-- Task description -->`,
+  spec: `## Purpose
+<!-- New capabilities only: one or two sentences (50+ characters) on what this capability is for. Delete this section for an existing capability. -->
+
+## ADDED Requirements
+
+### Requirement: <!-- requirement name -->
+<!-- requirement text -->
+
+#### Scenario: <!-- scenario name -->
+- **WHEN** <!-- condition -->
+- **THEN** <!-- expected outcome -->`,
 }
 
 const SCHEMA = {
@@ -702,6 +723,22 @@ export async function getArtifactStatus(projectDir = projectRoot, name, artifact
     }
   }
 
+  // Check if the change's .openspec.yaml declares skip_specs
+  const changeDirPath = changeDir(projectDir, name)
+  const openspecYamlPath = path.join(changeDirPath, ".openspec.yaml")
+  const openspecYaml = await readOptionalText(openspecYamlPath)
+  if (openspecYaml) {
+    const parsed = parseSimpleDocument(openspecYaml)
+    if (parsed.skip_specs === true && artifactId === "specs") {
+      return {
+        existingPaths: [],
+        id: artifactId,
+        missingDeps: [],
+        state: "skipped",
+      }
+    }
+  }
+
   const definition = getArtifactDefinition(artifactId)
   const depStatuses = await Promise.all(definition.requires.map((depId) => detectArtifactPaths(projectDir, name, depId)))
   const missingDeps = definition.requires.filter((_, index) => depStatuses[index]?.length === 0)
@@ -719,11 +756,43 @@ export async function getChangeStatus(projectDir = projectRoot, name) {
   const artifacts = await Promise.all(SCHEMA.artifacts.map((artifact) => getArtifactStatus(projectDir, meta.slug, artifact.id)))
   const applyReady = SCHEMA.applyRequires.every((artifactId) => artifacts.find((artifact) => artifact.id === artifactId)?.state === "done")
 
+  const root = path.resolve(projectDir, openspecRoot(projectDir))
+  const changeDirPath = changeDir(projectDir, meta.slug)
+  const changeRootRel = toRelativePath(projectDir, changeDirPath)
+
+  // Build artifactPaths: map artifact id -> existingOutputPaths + resolvedOutputPath
+  const artifactPaths = {}
+  for (const artifact of SCHEMA.artifacts) {
+    const existing = await detectArtifactPaths(projectDir, meta.slug, artifact.id)
+    artifactPaths[artifact.id] = {
+      existingOutputPaths: existing,
+      resolvedOutputPath: artifact.outputPaths.length === 1 ? artifact.outputPaths[0] : artifact.outputPaths,
+    }
+  }
+
+  const isPlanningComplete = artifacts
+    .filter((a) => a.state !== "skipped")
+    .every((a) => a.state === "done")
+
   return {
     allArtifactsComplete: artifacts.every((artifact) => artifact.state === "done"),
     applyReady,
     applyRequires: [...SCHEMA.applyRequires],
-    artifacts,
+    artifacts: artifacts.map((a) => ({
+      ...a,
+      requires: SCHEMA.artifacts.find((def) => def.id === a.id)?.requires ?? [],
+    })),
+    artifactPaths,
+    changeRoot: changeRootRel,
+    // actionContext 与 changeRoot 在当前 flat 项目结构中始终相同；
+    // 预留为 monorepo 子包作用域扩展点（上游兼容性）。
+    actionContext: changeRootRel,
+    isPlanningComplete,
+    planningHome: {
+      changesDir: toRelativePath(projectDir, changesRoot(projectDir)),
+      root: toRelativePath(projectDir, root),
+      specsDir: toRelativePath(projectDir, specsRoot(projectDir)),
+    },
     schema: meta.schema,
     schemaName: meta.schema,
     slug: meta.slug,
@@ -778,6 +847,8 @@ export async function getArtifactInstructions(projectDir = projectRoot, name, ar
   )
 
   const targetPaths = artifactTargetPaths(projectDir, meta.slug, artifactId)
+  const resolvedOutputPath = targetPaths[0] ?? ""
+  const isSkipped = status.state === "skipped"
 
   return {
     artifact: artifactId,
@@ -785,10 +856,13 @@ export async function getArtifactInstructions(projectDir = projectRoot, name, ar
     dependencies,
     instruction: artifactInstruction(artifactId),
     missingDeps: status.missingDeps,
-    outputPath: targetPaths[0] ?? "",
+    outputPath: resolvedOutputPath,
+    resolvedOutputPath,
     rules: "",
     schema: meta.schema,
     schemaName: meta.schema,
+    skipped: isSkipped,
+    warning: isSkipped ? "此 artifact 已通过 skip_specs 跳过" : undefined,
     state: status.state,
     targetPaths,
     template,
@@ -844,6 +918,8 @@ export async function prepareApply(projectDir = projectRoot, name) {
 
   return {
     contextFiles,
+    context: "",
+    operationGuidance: [],
     instruction: remainingTasks.length > 0
       ? `优先从任务 ${remainingTasks[0].id} 开始，完成后立刻回写 tasks.md。`
       : "所有任务都已完成，可以准备归档。",
@@ -1010,6 +1086,17 @@ export async function syncChangeSpecs(projectDir = projectRoot, name) {
   return {
     slug: validation.slug,
     syncedFiles,
+  }
+}
+
+export async function getArchiveInstructions(projectDir = projectRoot, name) {
+  const meta = await resolveChangeMeta(projectDir, name)
+  return {
+    archive: meta.slug,
+    context: "",
+    operationGuidance: [],
+    schema: meta.schema,
+    schemaName: meta.schema,
   }
 }
 
