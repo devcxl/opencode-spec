@@ -72,13 +72,30 @@ OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，�
 
 常用入口：
 
-- **commands**：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`
-- **skills**：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive`
+- **commands**（12 个）：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive` 及 8 个扩展命令（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive / onboard）
+- **skills**（12 个）：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive` 及 8 个扩展技能（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard）
 
 如果你希望：
 
 - **让 Agent 按预设提示组织流程**：优先用 commands / skills
 - **显式执行底层脚本**：skills 的 SKILL.md 中已内置脚本调用指引
+
+**命令对照表：**
+
+| 命令 | Skill | 功能 |
+|------|-------|------|
+| `/opsx-propose` | `openspec-propose` | 创建 change 并生成 proposal/specs/design/tasks |
+| `/opsx-explore` | `openspec-explore` | 探索问题、澄清需求 |
+| `/opsx-apply` | `openspec-apply` | 按 tasks 执行实现 |
+| `/opsx-archive` | `openspec-archive` | 归档完成的 change |
+| `/opsx-new-change` | `openspec-new-change` | 启动新变更，逐步创建 artifact |
+| `/opsx-continue-change` | `openspec-continue-change` | 继续创建下一个 artifact |
+| `/opsx-ff-change` | `openspec-ff-change` | 快速生成全部 planning artifacts |
+| `/opsx-update-change` | `openspec-update-change` | 更新 planning artifacts 并保持一致性 |
+| `/opsx-sync-specs` | `openspec-sync-specs` | 同步 delta specs 到 main specs |
+| `/opsx-verify-change` | `openspec-verify-change` | 验证实现与 artifact 匹配 |
+| `/opsx-bulk-archive` | `openspec-bulk-archive-change` | 批量归档多个变更 |
+| `/opsx-onboard` | `openspec-onboard` | 引导式完整工作流教学 |
 
 ### 5. 理解注入行为
 

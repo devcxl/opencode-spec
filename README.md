@@ -18,8 +18,8 @@
 
 插件通过 OpenCode 的 `config` hook 在运行时注入以下能力（不向项目 `.opencode/` 目录写入文件）：
 
-- **commands**：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`
-- **skills**：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive`
+- **commands**（12 个）：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`、`/opsx-new-change`、`/opsx-continue-change`、`/opsx-ff-change`、`/opsx-update-change`、`/opsx-sync-specs`、`/opsx-verify-change`、`/opsx-bulk-archive`、`/opsx-onboard`
+- **skills**（12 个）：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive` 及 8 个扩展技能（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard）
 
 每个 skill 内置 JavaScript 参考脚本，替代外部 openspec CLI。
 
@@ -58,12 +58,27 @@ propose → apply → archive
 explore（可选，随时使用）
 ```
 
+**核心命令**
+
 | 命令 | Skill | 功能 |
 |------|-------|------|
 | `/opsx-propose` | `openspec-propose` | 创建 change 并生成 proposal/specs/design/tasks |
 | `/opsx-explore` | `openspec-explore` | 探索问题、澄清需求 |
 | `/opsx-apply` | `openspec-apply` | 按 tasks 执行实现 |
 | `/opsx-archive` | `openspec-archive` | 归档完成的 change |
+
+**扩展命令**
+
+| 命令 | Skill | 功能 |
+|------|-------|------|
+| `/opsx-new-change` | `openspec-new-change` | 启动新变更，逐步创建 artifact |
+| `/opsx-continue-change` | `openspec-continue-change` | 继续创建下一个 artifact |
+| `/opsx-ff-change` | `openspec-ff-change` | 快速生成全部 planning artifacts |
+| `/opsx-update-change` | `openspec-update-change` | 更新 planning artifacts 并保持一致性 |
+| `/opsx-sync-specs` | `openspec-sync-specs` | 同步 delta specs 到 main specs |
+| `/opsx-verify-change` | `openspec-verify-change` | 验证实现与 artifact 匹配 |
+| `/opsx-bulk-archive` | `openspec-bulk-archive-change` | 批量归档多个变更 |
+| `/opsx-onboard` | `openspec-onboard` | 引导式完整工作流教学 |
 
 ## 注入方式
 
