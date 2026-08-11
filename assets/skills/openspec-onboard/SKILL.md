@@ -10,15 +10,19 @@ Guide the user through their first complete OpenSpec workflow cycle. This is a t
 
 ## Preflight
 
-Before starting, check if the OpenSpec CLI is installed:
+Verify the plugin's built-in reference scripts are available (no external CLI required):
+
 ```bash
-openspec --version 2>&1 || echo "CLI_NOT_INSTALLED"
+test -f .opencode/skills/openspec-propose/references/new-change.js && echo "SCRIPTS_OK" || echo "SCRIPTS_MISSING"
 ```
 
-**If CLI not installed:**
-> OpenSpec CLI is not installed. Install it first, then come back to `/opsx-onboard`.
+> Note: this `.opencode/skills/` path is rewritten by the plugin's skill deployment
+> (`setupSkillsDir`) to point at the actual temp directory where skills are installed.
 
-Stop here if not installed.
+**If scripts missing:**
+> The reference scripts are not installed. Make sure the opencode-spec plugin is enabled, then come back to `/opsx-onboard`.
+
+Stop here if missing.
 
 ---
 

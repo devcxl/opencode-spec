@@ -10,12 +10,18 @@ process.once("exit", () => {
   }
 })
 
-export async function setupSkillsDir(sourceSkillsDir: string): Promise<string> {
+export async function setupSkillsDir(sourceSkillsDir: string, sourceTemplatesDir?: string): Promise<string> {
   const baseDir = await mkdtemp(path.join(tmpdir(), "opencode-spec-skills-"))
   _tempDirs.add(baseDir)
   const destDir = path.join(baseDir, "skills")
 
   await cp(sourceSkillsDir, destDir, { recursive: true })
+
+  // 复制内置模板到临时目录，供参考脚本通过相对路径访问
+  if (sourceTemplatesDir) {
+    const destTemplatesDir = path.join(baseDir, "templates")
+    await cp(sourceTemplatesDir, destTemplatesDir, { recursive: true })
+  }
 
   async function processDir(dir: string) {
     const entries = await readdir(dir, { withFileTypes: true })

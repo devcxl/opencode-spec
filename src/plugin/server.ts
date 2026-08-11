@@ -1,11 +1,26 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import path from "node:path"
 
-import { getOpenspecDir, setOpenspecDir } from "../util/paths.js"
+import { setOpenspecDir } from "../util/paths.js"
 import { initPrompts } from "./prompts.js"
 import { initBootstrap, getBootstrapContent } from "./bootstrap.js"
 import { loadCommands } from "./commands.js"
 import { setupSkillsDir } from "./skills.js"
+
+/**
+ * 应用一个目录候选值（env > options > config 优先级）
+ *
+ * - env 一旦设置即锁定，后续候选值（options / config）均被忽略
+ * - 生效时同步写入 process.env.OPENSPEC_DIR，供参考脚本（独立 node 进程）读取
+ */
+function applyDirectoryCandidate(candidate: unknown): void {
+  if (process.env.OPENSPEC_DIR?.trim()) return
+  if (typeof candidate !== "string") return
+  const trimmed = candidate.trim()
+  if (!trimmed) return
+  setOpenspecDir(trimmed)
+  process.env.OPENSPEC_DIR = trimmed
+}
 
 /**
  * OpenSpec 插件工厂函数
@@ -19,22 +34,20 @@ import { setupSkillsDir } from "./skills.js"
 export function createOpencodeSpec(packageRoot: string): Plugin {
   return async (ctx, options) => {
     // 优先级：env > options > config > default
+    // env 一旦存在即锁定；规范化（去空格）后写入 env，保持与 applyDirectoryCandidate 一致
     const envDir = process.env.OPENSPEC_DIR?.trim()
     if (envDir) {
       setOpenspecDir(envDir)
-    }
-
-    if (options?.directory && typeof options.directory === "string" && options.directory.trim()) {
-      const dir = options.directory.trim()
-      if (!process.env.OPENSPEC_DIR?.trim()) {
-        setOpenspecDir(dir)
-        process.env.OPENSPEC_DIR = dir
+      if (process.env.OPENSPEC_DIR !== envDir) {
+        process.env.OPENSPEC_DIR = envDir
       }
     }
+    applyDirectoryCandidate(options?.directory)
 
     const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
+    const sourceTemplatesDir = path.join(packageRoot, "assets", "templates")
     const commandsDir = path.join(packageRoot, "assets", "commands")
-    const skillsDir = await setupSkillsDir(sourceSkillsDir)
+    const skillsDir = await setupSkillsDir(sourceSkillsDir, sourceTemplatesDir)
 
     const projectDir = ctx.worktree || ctx.directory
 
@@ -48,16 +61,8 @@ export function createOpencodeSpec(packageRoot: string): Plugin {
       config: async (rawConfig) => {
         const config = rawConfig as Record<string, any>
 
-        if (getOpenspecDir() === "openspec") {
-          const openspecConfig = config.openspec as Record<string, any> | undefined
-          if (openspecConfig?.directory && typeof openspecConfig.directory === "string" && openspecConfig.directory.trim()) {
-            const dir = openspecConfig.directory.trim()
-            if (!process.env.OPENSPEC_DIR?.trim()) {
-              setOpenspecDir(dir)
-              process.env.OPENSPEC_DIR = dir
-            }
-          }
-        }
+        // config 最低优先级（env / options 已设置时被忽略）
+        applyDirectoryCandidate(config.openspec?.directory)
 
         config.skills = config.skills || {}
         config.skills.paths = config.skills.paths || []

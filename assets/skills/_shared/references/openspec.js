@@ -1,7 +1,15 @@
 import { access, copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 export const projectRoot = process.cwd()
+
+/**
+ * 插件内置模板目录：<temp>/templates/
+ * openspec.js 位于 <temp>/skills/_shared/references/openspec.js，
+ * 向上推导 3 级得到临时根目录（由 setupSkillsDir 复制 skills 与 templates）。
+ */
+const pluginTemplatesDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "templates")
 
 const DEFAULT_TEMPLATES = {
   proposal: `## Why
@@ -24,7 +32,10 @@ const DEFAULT_TEMPLATES = {
 <!-- Existing capabilities whose REQUIREMENTS are changing (not just implementation).
      Only list here if spec-level behavior changes. Each needs a delta spec file.
      Use the exact existing path under openspec/specs/. Leave empty if no requirement
-     changes. -->
+     changes. A change with no capabilities at all (pure refactor, tooling, docs)
+     must set \`skip_specs: true\` in its .openspec.yaml - openspec validate rejects
+     a zero-delta change without that marker. Do not invent a requirement just to
+     satisfy validation. -->
 - \`<existing-capability-path>\`: <what requirement is changing>
 
 ## Impact
@@ -655,9 +666,22 @@ export async function resolveChangeMeta(projectDir = projectRoot, name) {
 }
 
 export async function getTemplate(projectDir = projectRoot, templateName) {
-  const templatePath = path.join(pluginTemplateDir(projectDir), `${templateName}.md`)
-  const projectTemplate = await readOptionalText(templatePath)
-  return projectTemplate ?? DEFAULT_TEMPLATES[templateName]
+  // 1. 用户项目自定义模板优先
+  const projectTemplatePath = path.join(pluginTemplateDir(projectDir), `${templateName}.md`)
+  const projectTemplate = await readOptionalText(projectTemplatePath)
+  if (projectTemplate != null) {
+    return projectTemplate
+  }
+
+  // 2. 插件内置模板（setupSkillsDir 复制到临时目录）
+  const builtinTemplatePath = path.join(pluginTemplatesDir, `${templateName}.md`)
+  const builtinTemplate = await readOptionalText(builtinTemplatePath)
+  if (builtinTemplate != null) {
+    return builtinTemplate
+  }
+
+  // 3. 兜底：硬编码默认模板
+  return DEFAULT_TEMPLATES[templateName]
 }
 
 export function renderTemplate(template, values) {
