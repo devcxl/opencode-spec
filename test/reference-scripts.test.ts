@@ -1,6 +1,7 @@
 import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
 
@@ -177,5 +178,41 @@ describe("reference scripts", () => {
     const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["skip-specs-change"])
     const specsArtifact = (status.artifacts as Array<{ id: string; state: string }>).find((a) => a.id === "specs")
     expect(specsArtifact?.state).toBe("skipped")
+  })
+
+  it("getTemplate 三级回退：用户自定义模板优先", async () => {
+    const projectDir = await createWorkspace()
+    const customDir = path.join(projectDir, ".opencode", "opencode-spec", "templates")
+    await mkdir(customDir, { recursive: true })
+    await writeFile(path.join(customDir, "proposal.md"), "# Custom Proposal\n", "utf8")
+
+    const openspecModule = await import(
+      `${pathToFileURL(path.join(projectDir, ".opencode", "skills", "_shared", "references", "openspec.js")).href}?templates-custom`
+    )
+    const template = await openspecModule.getTemplate(projectDir, "proposal")
+    expect(template).toBe("# Custom Proposal\n")
+  })
+
+  it("getTemplate 三级回退：无用户自定义时使用插件内置模板", async () => {
+    const projectDir = await createWorkspace()
+    const builtinDir = path.join(projectDir, ".opencode", "templates")
+    await mkdir(builtinDir, { recursive: true })
+    await writeFile(path.join(builtinDir, "design.md"), "# Builtin Design\n", "utf8")
+
+    const openspecModule = await import(
+      `${pathToFileURL(path.join(projectDir, ".opencode", "skills", "_shared", "references", "openspec.js")).href}?templates-builtin`
+    )
+    const template = await openspecModule.getTemplate(projectDir, "design")
+    expect(template).toBe("# Builtin Design\n")
+  })
+
+  it("getTemplate 三级回退：均缺失时回退 DEFAULT_TEMPLATES", async () => {
+    const projectDir = await createWorkspace()
+
+    const openspecModule = await import(
+      `${pathToFileURL(path.join(projectDir, ".opencode", "skills", "_shared", "references", "openspec.js")).href}?templates-default`
+    )
+    const template = await openspecModule.getTemplate(projectDir, "proposal")
+    expect(template).toContain("## Why")
   })
 })

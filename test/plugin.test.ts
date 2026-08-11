@@ -72,6 +72,35 @@ describe("OpencodeSpec config hook", () => {
     expect(config.skills.paths.length).toBe(1)
   })
 
+  it("注入 skills 目录的同时复制 templates 到临时目录", async () => {
+    const projectDir = await makeTempDir()
+    await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose", "references"), { recursive: true })
+    await mkdir(path.join(projectDir, "assets", "commands"), { recursive: true })
+    await writeFile(path.join(projectDir, "package.json"), JSON.stringify({ version: "0.1.0" }))
+
+    const plugin = await OpencodeSpec({
+      client: {} as never,
+      directory: projectDir,
+      worktree: projectDir,
+    } as never)
+
+    const config = {} as Record<string, any>
+    await plugin.config?.(config)
+
+    const skillsDir = config.skills.paths[0]
+    const templatesDir = path.join(path.dirname(skillsDir), "templates")
+
+    const repoRoot = path.resolve(__dirname, "..")
+    const sourceTemplatesDir = path.join(repoRoot, "assets", "templates")
+    expect(await exists(templatesDir)).toBe(true)
+    for (const name of ["proposal.md", "design.md", "spec.md", "tasks.md"]) {
+      expect(await exists(path.join(templatesDir, name))).toBe(true)
+      expect(await readFile(path.join(templatesDir, name), "utf8")).toBe(
+        await readFile(path.join(sourceTemplatesDir, name), "utf8"),
+      )
+    }
+  })
+
   it("注册的 skills 目录中 SKILL.md 的 .opencode/skills/ 路径被替换", async () => {
     const projectDir = await makeTempDir()
     await mkdir(path.join(projectDir, "assets", "skills", "openspec-propose", "references"), { recursive: true })
