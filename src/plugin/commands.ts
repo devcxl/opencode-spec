@@ -40,11 +40,22 @@ export interface ParsedCommand {
 /** commands 缓存，避免重复读取磁盘 */
 let _commandsCache: { key: string; value: ParsedCommand[] } | undefined
 
+/** 映射到上游 OpenSpec 官方规范命令名的别名 */
+export const COMMAND_ALIASES: Record<string, string> = {
+  "opsx-new-change": "opsx-new",
+  "opsx-continue-change": "opsx-continue",
+  "opsx-ff-change": "opsx-ff",
+  "opsx-update-change": "opsx-update",
+  "opsx-sync-specs": "opsx-sync",
+  "opsx-verify-change": "opsx-verify",
+}
+
 /**
  * 从 commandsDir 加载所有 slash command
  *
  * 遍历目录下的所有 .md 文件，解析 frontmatter 获取命令的元数据，
  * 并将 skills 路径替换为运行时动态创建的 skills 目录。
+ * 同时注册官方简写别名（如 /opsx-new -> /opsx-new-change）。
  */
 export function loadCommands(commandsDir: string, skillsDir: string): ParsedCommand[] {
   const cacheKey = `${commandsDir}:${skillsDir}`
@@ -66,14 +77,20 @@ export function loadCommands(commandsDir: string, skillsDir: string): ParsedComm
 
     const template = content.trim().replaceAll(".opencode/skills/", `${skillsDir}/`)
 
-    parsed.push({
+    const cmd: ParsedCommand = {
       name,
       description: frontmatter.description,
       agent: frontmatter.agent,
       model: frontmatter.model,
       subtask: frontmatter.subtask === "true" ? true : frontmatter.subtask === "false" ? false : undefined,
       template,
-    })
+    }
+    parsed.push(cmd)
+
+    const alias = COMMAND_ALIASES[name]
+    if (alias) {
+      parsed.push({ ...cmd, name: alias })
+    }
   }
 
   _commandsCache = { key: cacheKey, value: parsed }

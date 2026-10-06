@@ -18,8 +18,8 @@
 
 The plugin targets OpenCode V2 and registers these capabilities at runtime (no files are written to the project's `.opencode/` directory):
 
-- **commands** (12): `/opsx-propose`, `/opsx-explore`, `/opsx-apply`, `/opsx-archive`, `/opsx-new-change`, `/opsx-continue-change`, `/opsx-ff-change`, `/opsx-update-change`, `/opsx-sync-specs`, `/opsx-verify-change`, `/opsx-bulk-archive`, `/opsx-onboard`
-- **skills** (12): `openspec-propose`, `openspec-explore`, `openspec-apply`, `openspec-archive` plus 8 extension skills (new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard)
+- **commands** (12 core commands with 6 standard shorthand aliases): `/opsx-propose`, `/opsx-explore`, `/opsx-apply`, `/opsx-archive`, plus shorthands `/opsx-new`, `/opsx-continue`, `/opsx-ff`, `/opsx-update`, `/opsx-sync`, `/opsx-verify` (fully compatible with `-change` full forms)
+- **skills** (12 core skills with upstream aliases): `openspec-propose`, `openspec-explore`, `openspec-apply` (and `openspec-apply-change`), `openspec-archive` (and `openspec-archive-change`) plus 8 extension skills
 
 Each skill includes built-in JavaScript reference scripts, replacing external openspec CLI.
 
@@ -69,16 +69,16 @@ explore (optional, use anytime)
 
 **Extension commands**
 
-| Command | Skill | Description |
-|---------|-------|-------------|
-| `/opsx-new-change` | `openspec-new-change` | Start a new change, step by step |
-| `/opsx-continue-change` | `openspec-continue-change` | Continue to the next artifact |
-| `/opsx-ff-change` | `openspec-ff-change` | Generate all planning artifacts quickly |
-| `/opsx-update-change` | `openspec-update-change` | Revise planning artifacts coherently |
-| `/opsx-sync-specs` | `openspec-sync-specs` | Sync delta specs to main specs |
-| `/opsx-verify-change` | `openspec-verify-change` | Verify implementation matches artifacts |
-| `/opsx-bulk-archive` | `openspec-bulk-archive-change` | Archive multiple changes at once |
-| `/opsx-onboard` | `openspec-onboard` | Guided full workflow tutorial |
+| Command | Alias | Skill | Description |
+|---------|-------|-------|-------------|
+| `/opsx-new-change` | `/opsx-new` | `openspec-new-change` | Start a new change, step by step |
+| `/opsx-continue-change` | `/opsx-continue` | `openspec-continue-change` | Continue to the next artifact |
+| `/opsx-ff-change` | `/opsx-ff` | `openspec-ff-change` | Generate all planning artifacts quickly |
+| `/opsx-update-change` | `/opsx-update` | `openspec-update-change` | Revise planning artifacts coherently |
+| `/opsx-sync-specs` | `/opsx-sync` | `openspec-sync-specs` | Sync delta specs to main specs |
+| `/opsx-verify-change` | `/opsx-verify` | `openspec-verify-change` | Verify implementation matches artifacts |
+| `/opsx-bulk-archive` | — | `openspec-bulk-archive-change` | Archive multiple changes at once |
+| `/opsx-onboard` | — | `openspec-onboard` | Guided full workflow tutorial |
 
 ## How Injection Works
 

@@ -69,7 +69,7 @@ Archive a completed change in the OpenSpec workflow.
    Use `artifactPaths.specs.existingOutputPaths` from status JSON as the only delta-spec source.
 
    - If the `specs` artifact state is `skipped` (the change declares `skip_specs`) or `existingOutputPaths` is empty, there are no delta specs. Do not prompt for sync.
-   - If delta specs exist, compare each delta spec with its corresponding main spec at `<planningHome.root>/openspec/specs/<capability-path>/spec.md` (use the store-aware `planningHome.root` from step 2), determine what changes would be applied (adds, modifications, removals, renames), and show a combined summary before prompting.
+   - If delta specs exist, compare each delta spec with its corresponding main spec at `<planningHome.specsDir>/<capability-path>/spec.md` (use the store-aware `planningHome.specsDir` from step 2), determine what changes would be applied (adds, modifications, removals, renames), and show a combined summary before prompting.
 
    **Prompt options:**
    - If changes needed: "Sync now (recommended)", "Archive without syncing"

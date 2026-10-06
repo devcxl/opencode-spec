@@ -10,12 +10,12 @@ This document summarizes commands, skills, and workflow provided by `opencode-sp
 - `/opsx-explore`
 - `/opsx-apply`
 - `/opsx-archive`
-- `/opsx-new-change`
-- `/opsx-continue-change`
-- `/opsx-ff-change`
-- `/opsx-update-change`
-- `/opsx-sync-specs`
-- `/opsx-verify-change`
+- `/opsx-new-change` (alias `/opsx-new`)
+- `/opsx-continue-change` (alias `/opsx-continue`)
+- `/opsx-ff-change` (alias `/opsx-ff`)
+- `/opsx-update-change` (alias `/opsx-update`)
+- `/opsx-sync-specs` (alias `/opsx-sync`)
+- `/opsx-verify-change` (alias `/opsx-verify`)
 - `/opsx-bulk-archive`
 - `/opsx-onboard`
 

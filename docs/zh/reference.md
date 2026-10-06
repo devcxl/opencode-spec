@@ -10,12 +10,12 @@
 - `/opsx-explore`
 - `/opsx-apply`
 - `/opsx-archive`
-- `/opsx-new-change`
-- `/opsx-continue-change`
-- `/opsx-ff-change`
-- `/opsx-update-change`
-- `/opsx-sync-specs`
-- `/opsx-verify-change`
+- `/opsx-new-change`（别名 `/opsx-new`）
+- `/opsx-continue-change`（别名 `/opsx-continue`）
+- `/opsx-ff-change`（别名 `/opsx-ff`）
+- `/opsx-update-change`（别名 `/opsx-update`）
+- `/opsx-sync-specs`（别名 `/opsx-sync`）
+- `/opsx-verify-change`（别名 `/opsx-verify`）
 - `/opsx-bulk-archive`
 - `/opsx-onboard`
 

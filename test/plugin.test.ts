@@ -121,11 +121,15 @@ afterEach(() => {
 })
 
 describe("OpencodeSpec v2 skills registration", () => {
-  it("注册全部 12 个 skills", async () => {
+  it("注册全部 12 个 skills 及上游规范别名（共 14 个）", async () => {
     const state = await setup()
-    expect(state.skills.size).toBe(12)
+    expect(state.skills.size).toBe(14)
     expect(state.skills.has("openspec-propose")).toBe(true)
     expect(state.skills.has("openspec-onboard")).toBe(true)
+    expect(state.skills.has("openspec-apply")).toBe(true)
+    expect(state.skills.has("openspec-apply-change")).toBe(true)
+    expect(state.skills.has("openspec-archive")).toBe(true)
+    expect(state.skills.has("openspec-archive-change")).toBe(true)
   })
 
   it("解析 frontmatter、剥离 frontmatter 并重写 .opencode/skills/ 路径", async () => {
@@ -142,11 +146,18 @@ describe("OpencodeSpec v2 skills registration", () => {
 })
 
 describe("OpencodeSpec v2 commands registration", () => {
-  it("注册全部 12 个 commands", async () => {
+  it("注册全部 12 个 commands 及上游官方标准简写别名（共 18 个）", async () => {
     const state = await setup()
-    expect(state.commands.size).toBe(12)
+    expect(state.commands.size).toBe(18)
     expect(state.commands.has("opsx-propose")).toBe(true)
-    expect(state.commands.get("opsx-propose")!.description).toContain("planning artifacts")
+    expect(state.commands.has("opsx-new-change")).toBe(true)
+    expect(state.commands.has("opsx-new")).toBe(true)
+    expect(state.commands.has("opsx-continue")).toBe(true)
+    expect(state.commands.has("opsx-ff")).toBe(true)
+    expect(state.commands.has("opsx-update")).toBe(true)
+    expect(state.commands.has("opsx-sync")).toBe(true)
+    expect(state.commands.has("opsx-verify")).toBe(true)
+    expect(state.commands.get("opsx-new")!.description).toBe(state.commands.get("opsx-new-change")!.description)
   })
 
   it("执行 command 时渲染 $ARGUMENTS、替换 skills 路径并切换 agent", async () => {
@@ -163,7 +174,7 @@ describe("OpencodeSpec v2 commands registration", () => {
   it("不覆盖用户已存在的同名 command", async () => {
     const state = await setup({ existingCommands: ["opsx-propose"] })
     expect(state.commands.has("opsx-propose")).toBe(false)
-    expect(state.commands.size).toBe(11)
+    expect(state.commands.size).toBe(17)
   })
 })
 

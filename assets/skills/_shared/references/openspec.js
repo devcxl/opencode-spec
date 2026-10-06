@@ -175,7 +175,12 @@ function formatSimpleValue(value) {
     return String(value)
   }
 
-  return JSON.stringify(String(value ?? ""))
+  const str = String(value ?? "")
+  if (/^[a-zA-Z0-9_.-]+$/.test(str)) {
+    return str
+  }
+
+  return JSON.stringify(str)
 }
 
 function stringifySimpleDocument(record) {
@@ -597,21 +602,64 @@ export async function readProjectConfig(projectDir = projectRoot) {
 }
 
 async function inferChangeMetaFromLocation(projectDir, slug, location) {
-  const { schema } = await readProjectConfig(projectDir)
-  const targetProposalPath = path.join(location.dirPath, "proposal.md")
-  const proposalStats = await stat(targetProposalPath)
-  const frontmatter = await readProposalFrontmatter(targetProposalPath)
-  const archivedAt = location.status === "archived" ? (await stat(location.dirPath)).mtime.toISOString() : undefined
+  const { schema: defaultSchema } = await readProjectConfig(projectDir)
+  const openspecYamlPath = path.join(location.dirPath, ".openspec.yaml")
+  const openspecYaml = await readOptionalText(openspecYamlPath)
 
-  if (frontmatter.slug !== slug) {
-    throw new Error(`proposal.md frontmatter slug 与变更目录不一致：${frontmatter.slug} !== ${slug}`)
+  let schema = defaultSchema
+  let createdAt = undefined
+  if (openspecYaml) {
+    const parsed = parseSimpleDocument(openspecYaml)
+    if (typeof parsed.schema === "string" && parsed.schema.trim()) {
+      schema = parsed.schema.trim()
+    }
+    if (typeof parsed.createdAt === "string" && parsed.createdAt.trim()) {
+      createdAt = parsed.createdAt.trim()
+    }
   }
 
-  const updatedAt = proposalStats.mtime.toISOString()
+  const targetProposalPath = path.join(location.dirPath, "proposal.md")
+  const hasProposal = await pathExists(targetProposalPath)
+
+  if (!openspecYaml && !hasProposal) {
+    throw new Error(`未找到变更 ${slug} 的元数据（缺少 .openspec.yaml 或 proposal.md）`)
+  }
+
+  let updatedAt = undefined
+
+  if (hasProposal) {
+    const proposalStats = await stat(targetProposalPath)
+    updatedAt = proposalStats.mtime.toISOString()
+
+    try {
+      const frontmatter = await readProposalFrontmatter(targetProposalPath)
+      if (frontmatter.slug !== slug) {
+        throw new Error(`proposal.md frontmatter slug 与变更目录不一致：${frontmatter.slug} !== ${slug}`)
+      }
+      if (!createdAt) {
+        createdAt = frontmatter.createdAt
+      }
+    } catch (error) {
+      // 如果存在 .openspec.yaml，允许 proposal.md 缺少或使用自定义 frontmatter
+      if (!openspecYaml) {
+        throw error
+      }
+    }
+  }
+
+  const dirStats = await stat(location.dirPath)
+  if (!createdAt) {
+    createdAt = dirStats.birthtime?.toISOString() || dirStats.mtime.toISOString()
+  }
+  if (!updatedAt) {
+    updatedAt = dirStats.mtime.toISOString()
+  }
+
+  const archivedAt = location.status === "archived" ? (await stat(location.dirPath)).mtime.toISOString() : undefined
 
   return {
     archivedAt,
-    createdAt: frontmatter.createdAt,
+    createdAt,
     name: slug,
     schema,
     slug,
@@ -757,6 +805,7 @@ export async function getArtifactStatus(projectDir = projectRoot, name, artifact
       id: artifactId,
       missingDeps: [],
       state: "done",
+      status: "done",
     }
   }
 
@@ -768,18 +817,21 @@ export async function getArtifactStatus(projectDir = projectRoot, name, artifact
       id: artifactId,
       missingDeps: [],
       state: "skipped",
+      status: "skipped",
     }
   }
 
   const definition = getArtifactDefinition(artifactId)
   const depStatuses = await Promise.all(definition.requires.map((depId) => detectArtifactPaths(projectDir, name, depId)))
   const missingDeps = definition.requires.filter((_, index) => depStatuses[index]?.length === 0)
+  const state = missingDeps.length > 0 ? "blocked" : "ready"
 
   return {
     existingPaths,
     id: artifactId,
     missingDeps,
-    state: missingDeps.length > 0 ? "blocked" : "ready",
+    state,
+    status: state,
   }
 }
 
@@ -812,6 +864,7 @@ export async function getChangeStatus(projectDir = projectRoot, name) {
     applyRequires: [...SCHEMA.applyRequires],
     artifacts: artifacts.map((a) => ({
       ...a,
+      status: a.state,
       requires: SCHEMA.artifacts.find((def) => def.id === a.id)?.requires ?? [],
     })),
     artifactPaths,
@@ -843,11 +896,19 @@ export async function createChangeScaffold(projectDir = projectRoot, name) {
   const { schema } = await readProjectConfig(projectDir)
   const specsDir = changeSpecsDir(projectDir, slug)
   await mkdir(specsDir, { recursive: true })
-  const targetProposalPath = proposalPath(projectDir, slug)
-  await writeText(targetProposalPath, formatProposalWithFrontmatter("", { slug, createdAt: new Date().toISOString() }))
+
+  const openspecYamlPath = path.join(targetDir, ".openspec.yaml")
+  const createdAt = new Date().toISOString()
+  await writeText(
+    openspecYamlPath,
+    stringifySimpleDocument({
+      createdAt,
+      schema,
+    }),
+  )
 
   return {
-    created: [targetDir, specsDir, targetProposalPath].map((filePath) => toRelativePath(projectDir, filePath)),
+    created: [targetDir, specsDir, openspecYamlPath].map((filePath) => toRelativePath(projectDir, filePath)),
     path: toRelativePath(projectDir, targetDir),
     schema,
     slug,
@@ -879,7 +940,9 @@ export async function getArtifactInstructions(projectDir = projectRoot, name, ar
   )
 
   const targetPaths = artifactTargetPaths(projectDir, meta.slug, artifactId)
-  const resolvedOutputPath = targetPaths[0] ?? ""
+  const resolvedOutputPath = definition.outputPaths.length === 1 && definition.outputPaths[0].includes("*")
+    ? toRelativePath(projectDir, path.join(changeDir(projectDir, meta.slug), definition.outputPaths[0]))
+    : (targetPaths[0] ?? "")
   const isSkipped = status.state === "skipped"
 
   return {
@@ -896,6 +959,7 @@ export async function getArtifactInstructions(projectDir = projectRoot, name, ar
     skipped: isSkipped,
     warning: isSkipped ? "此 artifact 已通过 skip_specs 跳过" : undefined,
     state: status.state,
+    status: status.state,
     targetPaths,
     template,
   }
@@ -1243,29 +1307,41 @@ export async function archiveChange(projectDir = projectRoot, name, options = {}
 
 export async function listChanges(projectDir = projectRoot) {
   const summarizeChange = async (rootDir, name, archived = false) => {
-    const tasksFilePath = path.join(rootDir, name, "tasks.md")
-    const tasksContent = (await readOptionalText(tasksFilePath)) ?? ""
-    const tasks = parseTasks(tasksContent)
-    const completedTasks = tasks.filter((task) => task.checked).length
-    const pendingTasks = tasks.filter((task) => !task.checked).length
-    const meta = await resolveChangeMeta(projectDir, archived ? name.replace(/^\d{4}-\d{2}-\d{2}-/, "") : name)
+    try {
+      const tasksFilePath = path.join(rootDir, name, "tasks.md")
+      const tasksContent = (await readOptionalText(tasksFilePath)) ?? ""
+      const tasks = parseTasks(tasksContent)
+      const completedTasks = tasks.filter((task) => task.checked).length
+      const pendingTasks = tasks.filter((task) => !task.checked).length
+      const meta = await resolveChangeMeta(projectDir, archived ? name.replace(/^\d{4}-\d{2}-\d{2}-/, "") : name)
 
-    let status = archived ? "archived" : "in-progress"
-    if (!archived) {
-      try {
-        status = (await verifyChange(projectDir, meta.slug)).readyToArchive ? "ready-to-archive" : "in-progress"
-      } catch {
-        status = "in-progress"
+      let status = archived ? "archived" : "in-progress"
+      if (!archived) {
+        try {
+          status = (await verifyChange(projectDir, meta.slug)).readyToArchive ? "ready-to-archive" : "in-progress"
+        } catch {
+          status = "in-progress"
+        }
       }
-    }
 
-    return {
-      completedTasks,
-      name: meta.slug,
-      path: toRelativePath(projectDir, path.join(rootDir, name)),
-      pendingTasks,
-      schema: meta.schema,
-      status,
+      return {
+        completedTasks,
+        name: meta.slug,
+        path: toRelativePath(projectDir, path.join(rootDir, name)),
+        pendingTasks,
+        schema: meta.schema,
+        status,
+      }
+    } catch (error) {
+      return {
+        completedTasks: 0,
+        error: error instanceof Error ? error.message : String(error),
+        name: archived ? name.replace(/^\d{4}-\d{2}-\d{2}-/, "") : name,
+        path: toRelativePath(projectDir, path.join(rootDir, name)),
+        pendingTasks: 0,
+        schema: "unknown",
+        status: "invalid",
+      }
     }
   }
 

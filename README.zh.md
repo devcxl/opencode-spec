@@ -72,8 +72,8 @@ OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，�
 
 常用入口：
 
-- **commands**（12 个）：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive` 及 8 个扩展命令（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive / onboard）
-- **skills**（12 个）：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive` 及 8 个扩展技能（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard）
+- **commands**（12 个核心命令，支持 6 个标准简写别名）：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`，以及标准简写 `/opsx-new`、`/opsx-continue`、`/opsx-ff`、`/opsx-update`、`/opsx-sync`、`/opsx-verify`（同时完全兼容原 `/opsx-*-change` 命名）
+- **skills**（12 个核心技能，支持上游标准别名）：`openspec-propose`、`openspec-explore`、`openspec-apply`（及 `openspec-apply-change`）、`openspec-archive`（及 `openspec-archive-change`）及 8 个扩展技能
 
 如果你希望：
 
@@ -82,20 +82,20 @@ OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，�
 
 **命令对照表：**
 
-| 命令 | Skill | 功能 |
-|------|-------|------|
-| `/opsx-propose` | `openspec-propose` | 创建 change 并生成 proposal/specs/design/tasks |
-| `/opsx-explore` | `openspec-explore` | 探索问题、澄清需求 |
-| `/opsx-apply` | `openspec-apply` | 按 tasks 执行实现 |
-| `/opsx-archive` | `openspec-archive` | 归档完成的 change |
-| `/opsx-new-change` | `openspec-new-change` | 启动新变更，逐步创建 artifact |
-| `/opsx-continue-change` | `openspec-continue-change` | 继续创建下一个 artifact |
-| `/opsx-ff-change` | `openspec-ff-change` | 快速生成全部 planning artifacts |
-| `/opsx-update-change` | `openspec-update-change` | 更新 planning artifacts 并保持一致性 |
-| `/opsx-sync-specs` | `openspec-sync-specs` | 同步 delta specs 到 main specs |
-| `/opsx-verify-change` | `openspec-verify-change` | 验证实现与 artifact 匹配 |
-| `/opsx-bulk-archive` | `openspec-bulk-archive-change` | 批量归档多个变更 |
-| `/opsx-onboard` | `openspec-onboard` | 引导式完整工作流教学 |
+| 命令 | 别名 | Skill | 功能 |
+|------|------|-------|------|
+| `/opsx-propose` | — | `openspec-propose` | 创建 change 并生成 proposal/specs/design/tasks |
+| `/opsx-explore` | — | `openspec-explore` | 探索问题、澄清需求 |
+| `/opsx-apply` | — | `openspec-apply` | 按 tasks 执行实现 |
+| `/opsx-archive` | — | `openspec-archive` | 归档完成的 change |
+| `/opsx-new-change` | `/opsx-new` | `openspec-new-change` | 启动新变更，逐步创建 artifact |
+| `/opsx-continue-change` | `/opsx-continue` | `openspec-continue-change` | 继续创建下一个 artifact |
+| `/opsx-ff-change` | `/opsx-ff` | `openspec-ff-change` | 快速生成全部 planning artifacts |
+| `/opsx-update-change` | `/opsx-update` | `openspec-update-change` | 更新 planning artifacts 并保持一致性 |
+| `/opsx-sync-specs` | `/opsx-sync` | `openspec-sync-specs` | 同步 delta specs 到 main specs |
+| `/opsx-verify-change` | `/opsx-verify` | `openspec-verify-change` | 验证实现与 artifact 匹配 |
+| `/opsx-bulk-archive` | — | `openspec-bulk-archive-change` | 批量归档多个变更 |
+| `/opsx-onboard` | — | `openspec-onboard` | 引导式完整工作流教学 |
 
 ### 5. 理解注入行为
 

@@ -106,11 +106,18 @@ function readAutoinvoke(metadata: unknown): boolean | undefined {
   return undefined
 }
 
+/** 映射到上游 OpenSpec 官方技能目录名的别名 */
+export const SKILL_ALIASES: Record<string, string> = {
+  "openspec-apply": "openspec-apply-change",
+  "openspec-archive": "openspec-archive-change",
+}
+
 /**
  * 从已部署的 skills 目录加载 V2 Skill.Info 列表。
  *
  * frontmatter 解析与 id/name/description/autoinvoke 推导对齐 OpenCode
  * `SkillFile.parse`，保证插件注册的 skill 与内置目录 skill 语义一致。
+ * 同时注册上游标准别名（如 openspec-apply-change、openspec-archive-change）。
  */
 export async function loadSkills(skillsDir: string): Promise<Skill.Info[]> {
   const files = (await collectSkillFiles(skillsDir)).sort()
@@ -135,6 +142,20 @@ export async function loadSkills(skillsDir: string): Promise<Skill.Info[]> {
         content: body,
       }),
     )
+
+    const alias = SKILL_ALIASES[id]
+    if (alias) {
+      skills.push(
+        Skill.Info.make({
+          id: Skill.ID.make(alias),
+          name: Skill.Name.make(alias),
+          ...(description === undefined ? {} : { description }),
+          ...(autoinvoke === undefined ? {} : { autoinvoke }),
+          path: file as Skill.Info["path"],
+          content: body,
+        }),
+      )
+    }
   }
 
   return skills

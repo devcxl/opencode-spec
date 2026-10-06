@@ -82,21 +82,61 @@ async function prepareChange(projectDir: string, displayName: string) {
   const created = await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", [displayName])
   const slug = String(created.slug)
   const baseDir = path.join(projectDir, "openspec", "changes", slug)
+  await writeFile(path.join(baseDir, "proposal.md"), "# Proposal\n", "utf8")
   await writeFile(path.join(baseDir, "design.md"), "# Design\n", "utf8")
   await writeFile(path.join(baseDir, "tasks.md"), "# Tasks\n\n## Implementation\n- [x] 1.1 完成实现\n", "utf8")
   return { baseDir, slug }
 }
 
 describe("reference scripts", () => {
-  it("new-change 与 status 能在同步目录下正常工作", async () => {
+  it("new-change 创建 .openspec.yaml 且初始状态中 proposal 为 ready", async () => {
     const projectDir = await createWorkspace()
 
     const created = await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Demo Change"])
     expect(created.slug).toBe("demo-change")
 
+    const yamlPath = path.join(projectDir, "openspec", "changes", "demo-change", ".openspec.yaml")
+    expect(await exists(yamlPath)).toBe(true)
+    const yamlContent = await readFile(yamlPath, "utf8")
+    expect(yamlContent).toContain("schema: spec-driven")
+
     const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["demo-change"])
     expect(status.slug).toBe("demo-change")
-    expect((status.artifacts as Array<{ id: string; state: string }>).find((artifact) => artifact.id === "proposal")?.state).toBe("done")
+    const proposalArtifact = (status.artifacts as Array<{ id: string; state: string; status: string }>).find((a) => a.id === "proposal")
+    expect(proposalArtifact?.status).toBe("ready")
+    expect(proposalArtifact?.state).toBe("ready")
+    expect(status.isPlanningComplete).toBe(false)
+  })
+
+  it("list.js 遇到损坏变更目录时降级为 invalid，不导致全局崩溃", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Good Change"])
+    const brokenDir = path.join(projectDir, "openspec", "changes", "broken-change")
+    await mkdir(brokenDir, { recursive: true })
+
+    const listResult = await runJson(projectDir, ".opencode/skills/openspec-explore/references/list.js")
+    const active = listResult.active as Array<{ name: string; status: string; error?: string }>
+    expect(active.length).toBe(2)
+    const broken = active.find((c) => c.name === "broken-change")
+    expect(broken?.status).toBe("invalid")
+    expect(broken?.error).toBeDefined()
+    const good = active.find((c) => c.name === "good-change")
+    expect(good?.status).toBeDefined()
+    expect(good?.status).not.toBe("invalid")
+  })
+
+  it("instructions.js 为 specs 返回模式路径而非锁死单一 spec.md", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Pattern Change"])
+    const baseDir = path.join(projectDir, "openspec", "changes", "pattern-change")
+    await writeFile(path.join(baseDir, "proposal.md"), "# Proposal\n", "utf8")
+
+    const instructions = await runJson(projectDir, ".opencode/skills/openspec-propose/references/instructions.js", [
+      "specs",
+      "--change=pattern-change",
+    ])
+    expect(String(instructions.resolvedOutputPath)).toContain("specs/**/*.md")
+    expect(instructions.status).toBe("ready")
   })
 
   it("mark-tasks 会按机器任务 ID 勾选正确任务，并写入验证说明", async () => {

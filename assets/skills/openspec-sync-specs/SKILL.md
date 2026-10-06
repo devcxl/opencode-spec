@@ -32,7 +32,7 @@ This is an **agent-driven** operation - you will read delta specs and directly e
    node .opencode/skills/openspec-propose/references/status.js "<name>"
    ```
 
-   The JSON includes `planningHome.root`. Main specs live under `<planningHome.root>/openspec/specs/` — use that (store-aware) root for every main-spec path below.
+   The JSON includes `planningHome.specsDir`. Main specs live under `<planningHome.specsDir>/` — use that (store-aware) directory for every main-spec path below.
 
 3. **Find delta specs**
 
@@ -52,7 +52,7 @@ This is an **agent-driven** operation - you will read delta specs and directly e
 
    a. **Read the delta spec** to understand the intended changes
 
-   b. **Read the main spec** at `<planningHome.root>/openspec/specs/<capability-path>/spec.md` (may not exist yet)
+   b. **Read the main spec** at `<planningHome.specsDir>/<capability-path>/spec.md` (may not exist yet)
 
    c. **Apply changes intelligently**:
 
@@ -78,7 +78,7 @@ This is an **agent-driven** operation - you will read delta specs and directly e
       - Find the FROM requirement, rename to TO
 
    d. **Create new main spec** if capability doesn't exist yet:
-      - Create `<planningHome.root>/openspec/specs/<capability-path>/spec.md`
+      - Create `<planningHome.specsDir>/<capability-path>/spec.md`
       - Add Purpose section: copy the delta's `## Purpose` body verbatim when it has one
       - Add Requirements section with the ADDED requirements
 
