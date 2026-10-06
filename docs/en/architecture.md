@@ -2,7 +2,7 @@
 
 [Back to README](../../README.en.md) | [中文](../zh/architecture.md)
 
-`opencode-spec` uses a "pure runtime injection" approach: commands and skills are registered at startup via OpenCode's `config` hook, with no files written to the project directory.
+`opencode-spec` targets OpenCode V2. It registers commands and skills during plugin `setup(ctx)` without writing integration files into the project directory.
 
 ## Capability boundaries
 
@@ -11,7 +11,7 @@ The plugin directly handles:
 - registering commands and skills at runtime
 - injecting a session guidance message
 
-Command execution, skill invocation, and reference script calls are all handled by OpenCode's native mechanisms. The plugin does not participate in runtime execution.
+OpenCode invokes the registered commands and skills. A command submits its rendered prompt through `ctx.session.prompt`; the agent runs the referenced Node scripts when needed. The plugin does not implement spec changes inside the OpenCode server.
 
 ## Startup flow
 
@@ -30,14 +30,14 @@ assets/skills/                   /tmp/opencode-spec-skills-XXXX/skills/
 ```
 
 - Copies `assets/skills/` from the plugin package to a system temp directory (`/tmp/opencode-spec-skills-<random>/skills/`)
-- Recursively walks all `SKILL.md` files, replacing `.opencode/skills/` path placeholders with actual temp directory paths
-- Registers the temp directory via `config.skills.paths` as a skill search path
-- Cleans up the temp directory automatically on process exit via `process.on("exit")`
+- Rewrites script paths and passes the workspace-specific `OPENSPEC_DIR` to each script invocation
+- Parses and registers the 12 skills through `ctx.skill.transform`
+- Removes the temporary directory when the plugin unloads, including failed setup
 
 ### 2. Command registration (`loadCommands`)
 
 ```
-assets/commands/            config.command
+assets/commands/            ctx.command.transform
 ├── opsx-propose.md   →     /opsx-propose (template + description)
 ├── opsx-apply.md     →     /opsx-apply
 ├── opsx-archive.md   →     /opsx-archive
@@ -46,27 +46,25 @@ assets/commands/            config.command
 
 - Parses frontmatter and template content from `assets/commands/*.md`
 - Replaces `.opencode/skills/` paths in templates with temp skill directory paths
-- Registers directly via `config.command`, making them available via `/`
+- Registers all 12 commands through `ctx.command.transform`, making them available via `/`
 - If a command with the same name already exists in `opencode.json`, the plugin will not override it
 
-### 3. Guidance message injection (`experimental.chat.messages.transform`)
+### 3. Guidance context (`ctx.session.hook("context")`)
 
-- Injects an OpenSpec workflow guidance block into the **first user message** of each session
+- Adds an OpenSpec workflow guidance block to the model-visible system context
 - Content includes available slash commands and recommended workflow
-- Injected only once per session, never duplicated
+- Skips injection if the current context already contains the guidance marker
 
-## Current limitation
+## Boundaries
 
-`experimental.chat.messages.transform` is an experimental API and may change in the future.
-
-If this API is removed, guidance message injection will be lost, but command and skill injection will not be affected (both use the `config` hook, which is a stable API).
+The plugin uses its own bundled OpenSpec-style scripts, not the upstream `openspec` CLI. It does not provide all upstream CLI commands, schema types, or validation guarantees. Directory options must stay within the project; V1-only plugin entrypoints are not supported.
 
 ## How reference scripts are invoked
 
 SKILL.md files reference scripts using this pattern:
 
 ```
-node .opencode/skills/openspec-propose/references/new-change.js "<name>"
+OPENSPEC_DIR='docs' node '/tmp/opencode-spec-skills-XXXX/skills/openspec-propose/references/new-change.js' "<name>"
 ```
 
-`.opencode/skills/` is a path placeholder that is replaced at runtime with the actual temp directory path. Scripts are executed via `node` and operate on the `openspec/` directory structure.
+`.opencode/skills/` is a source placeholder replaced with a quoted temporary script path. `OPENSPEC_DIR` is set for each invocation, not written into the shared server environment; by default it is `openspec`.

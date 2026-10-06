@@ -6,12 +6,12 @@
 
 ## 1. 安装插件
 
-在项目根目录配置 `opencode.json`：
+需要 OpenCode V2。在项目根目录配置 `opencode.json`：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@devcxl/opencode-spec"]
+  "plugins": ["@devcxl/opencode-spec"]
 }
 ```
 

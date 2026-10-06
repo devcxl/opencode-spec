@@ -16,7 +16,7 @@
 
 ## 核心能力
 
-插件通过 OpenCode 的 `config` hook 在运行时注入以下能力（不向项目 `.opencode/` 目录写入文件）：
+插件面向 OpenCode V2，在运行时注册以下能力（不向项目 `.opencode/` 目录写入文件）：
 
 - **commands**（12 个）：`/opsx-propose`、`/opsx-explore`、`/opsx-apply`、`/opsx-archive`、`/opsx-new-change`、`/opsx-continue-change`、`/opsx-ff-change`、`/opsx-update-change`、`/opsx-sync-specs`、`/opsx-verify-change`、`/opsx-bulk-archive`、`/opsx-onboard`
 - **skills**（12 个）：`openspec-propose`、`openspec-explore`、`openspec-apply`、`openspec-archive` 及 8 个扩展技能（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard）
@@ -25,12 +25,12 @@
 
 ## 安装
 
-在项目根目录的 `opencode.json` 中加入：
+需要 OpenCode V2。在项目根目录的 `opencode.json` 中加入：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@devcxl/opencode-spec"]
+  "plugins": ["@devcxl/opencode-spec"]
 }
 ```
 
@@ -38,13 +38,13 @@
 
 ## 配置
 
-OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，使用 plugin 元组格式传入 `directory` 选项：
+OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，通过 V2 的插件选项传入 `directory`：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    ["@devcxl/opencode-spec", { "directory": "docs" }]
+  "plugins": [
+    { "package": "@devcxl/opencode-spec", "options": { "directory": "docs" } }
   ]
 }
 ```
@@ -82,10 +82,10 @@ explore（可选，随时使用）
 
 ## 注入方式
 
-插件启动时通过 `config` hook 在运行时注入 commands 和 skills：
+插件启动时通过 OpenCode V2 的插件接口在运行时注册 commands 和 skills：
 
-- **commands**：直接注册到 OpenCode 的 `config.command`，无需写入项目目录即可被 `/` 触发
-- **skills**：将 `assets/skills/` 复制到系统临时目录，替换内部路径占位符后，通过 `config.skills.paths` 注册；进程退出时自动清理
+- **commands**：运行时注册，无需写入项目目录即可被 `/` 触发
+- **skills**：将 `assets/skills/` 复制到系统临时目录，替换内部路径占位符后运行时注册；插件卸载时清理
 
 ## 本地开发
 

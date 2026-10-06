@@ -14,18 +14,18 @@
 
 </div>
 
-插件通过 `config` hook 在运行时把 commands / skills 注册到 OpenCode，并在会话启动时注入工作流提示。
+插件面向 OpenCode V2，在运行时注册 commands / skills，并为会话提供工作流提示。
 
 ## 使用指南
 
 ### 1. 安装插件
 
-在项目根目录的 `opencode.json` 中加入：
+需要 OpenCode V2。在项目根目录的 `opencode.json` 中加入：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@devcxl/opencode-spec"]
+  "plugins": ["@devcxl/opencode-spec"]
 }
 ```
 
@@ -35,13 +35,13 @@
 
 ### 1.1 自定义输出目录
 
-OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，使用 plugin 元组格式传入 `directory` 选项：
+OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，使用 V2 插件选项传入 `directory`：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    ["@devcxl/opencode-spec", { "directory": "docs" }]
+  "plugins": [
+    { "package": "@devcxl/opencode-spec", "options": { "directory": "docs" } }
   ]
 }
 ```
@@ -99,11 +99,11 @@ OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，�
 
 ### 5. 理解注入行为
 
-插件通过 OpenCode 的 `config` hook 在运行时注入 commands 和 skills，**不向项目 `.opencode/` 目录写入任何文件**：
+插件通过 OpenCode V2 接口在运行时注册 commands 和 skills，**不向项目 `.opencode/` 目录写入任何文件**：
 
-- **commands**：解析 `assets/commands/`，直接注册到 `config.command`，无需文件同步即可被 `/` 触发
-- **skills**：将 `assets/skills/` 复制到系统临时目录（`/tmp`），替换 SKILL.md 中的路径占位符后，通过 `config.skills.paths` 注册；进程退出时临时目录自动清理
-- **会话提示**：通过 `experimental.chat.messages.transform` hook 在首条用户消息中注入 OpenSpec 工作流引导
+- **commands**：解析 `assets/commands/` 并运行时注册，无需文件同步即可被 `/` 触发
+- **skills**：将 `assets/skills/` 复制到系统临时目录，替换 SKILL.md 中的路径占位符后运行时注册；插件卸载时清理
+- **会话提示**：通过 V2 会话钩子提供 OpenSpec 工作流引导
 
 这意味着无需重启 OpenCode 即可立即使用 commands 和 skills。
 
@@ -111,11 +111,11 @@ OpenSpec 默认输出到项目根下的 `openspec/` 目录。如需自定义，�
 
 ## 运行原理
 
-这个插件的核心思路是“纯运行时注入”——不向项目目录同步文件，而是通过 `config` hook 在启动时注册所有能力：
+这个插件的核心思路是“纯运行时注入”——不向项目目录同步文件，而是通过 V2 插件接口在启动时注册能力：
 
-- **commands 由 `config.command` 直接注册**，模板中引用脚本路径在解析时完成路径替换
-- **skills 复制到 `/tmp` 临时目录后通过 `config.skills.paths` 注册**，进程退出时清理
-- **引导消息在首条用户消息中注入**，告知可用命令和推荐流程
+- **commands 运行时注册**，模板中引用脚本路径在解析时完成路径替换
+- **skills 复制到系统临时目录后运行时注册**，插件卸载时清理
+- **会话钩子提供工作流引导**，告知可用命令和推荐流程
 
 这样做的优势是隔离性强、无残留、升级即生效。
 

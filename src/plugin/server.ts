@@ -1,25 +1,27 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import type { Plugin } from "@opencode/plugin"
 import path from "node:path"
 
-import { setOpenspecDir } from "../util/paths.js"
-import { initPrompts } from "./prompts.js"
-import { initBootstrap, getBootstrapContent } from "./bootstrap.js"
+import { loadBootstrap } from "./bootstrap.js"
 import { loadCommands } from "./commands.js"
-import { setupSkillsDir } from "./skills.js"
+import { cleanupSkillsDir, loadSkills, renderScriptCalls, setupSkillsDir } from "./skills.js"
+
+/** OpenSpec 默认输出目录名 */
+const DEFAULT_DIRECTORY = "openspec"
 
 /**
- * 应用一个目录候选值（env > options > config 优先级）
+ * 解析 OpenSpec 输出目录：OPENSPEC_DIR 环境变量 > options.directory > 默认值。
  *
- * - env 一旦设置即锁定，后续候选值（options / config）均被忽略
- * - 生效时同步写入 process.env.OPENSPEC_DIR，供参考脚本（独立 node 进程）读取
+ * 不再写入 process.env，避免同一 OpenCode 进程内多个 workspace 互相串用目录名。
+ * 目录通过 command 模板中的内联环境变量传递给独立 node 参考脚本。
  */
-function applyDirectoryCandidate(candidate: unknown): void {
-  if (process.env.OPENSPEC_DIR?.trim()) return
-  if (typeof candidate !== "string") return
-  const trimmed = candidate.trim()
-  if (!trimmed) return
-  setOpenspecDir(trimmed)
-  process.env.OPENSPEC_DIR = trimmed
+function resolveDirectory(ctx: Plugin.Context): string {
+  const envDir = process.env.OPENSPEC_DIR?.trim()
+  const optionDir = ctx.options.directory
+  const directory = envDir || (typeof optionDir === "string" && optionDir.trim()) || DEFAULT_DIRECTORY
+  if (path.isAbsolute(directory) || path.win32.isAbsolute(directory) || directory.split(/[\\/]/).includes("..") || directory.includes("\0")) {
+    throw new Error("OpenSpec directory 必须是项目内的相对路径")
+  }
+  return directory
 }
 
 /**
@@ -27,78 +29,61 @@ function applyDirectoryCandidate(candidate: unknown): void {
  *
  * @param packageRoot - 插件包根目录，用于定位 assets 资源。
  *
- * 注册两个钩子：
- * 1. config - 在启动时注入 skills 路径和 slash commands，并读取 openspec.directory 配置
- * 2. experimental.chat.messages.transform - 在每条用户消息前插入 bootstrap 提示
+ * 在 setup 中注册：
+ * 1. skill transform - 注入 12 个 OpenSpec skills
+ * 2. command transform - 注入 12 个 slash commands（用户同名命令优先，不覆盖）
+ * 3. session context hook - 在模型请求前注入 bootstrap 提示
  */
-export function createOpencodeSpec(packageRoot: string): Plugin {
-  return async (ctx, options) => {
-    // 优先级：env > options > config > default
-    // env 一旦存在即锁定；规范化（去空格）后写入 env，保持与 applyDirectoryCandidate 一致
-    const envDir = process.env.OPENSPEC_DIR?.trim()
-    if (envDir) {
-      setOpenspecDir(envDir)
-      if (process.env.OPENSPEC_DIR !== envDir) {
-        process.env.OPENSPEC_DIR = envDir
-      }
-    }
-    applyDirectoryCandidate(options?.directory)
+export function createOpencodeSpec(packageRoot: string) {
+  return async (ctx: Plugin.Context): Promise<() => Promise<void>> => {
+    const directory = resolveDirectory(ctx)
 
     const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
     const sourceTemplatesDir = path.join(packageRoot, "assets", "templates")
     const commandsDir = path.join(packageRoot, "assets", "commands")
-    const skillsDir = await setupSkillsDir(sourceSkillsDir, sourceTemplatesDir)
+    const skillsDir = await setupSkillsDir(sourceSkillsDir, sourceTemplatesDir, directory)
 
-    const projectDir = ctx.worktree || ctx.directory
+    try {
+      const bootstrap = await loadBootstrap(packageRoot, ctx.location.project.directory)
 
-    await initPrompts(packageRoot, projectDir)
-    await initBootstrap()
+      const skills = await loadSkills(skillsDir)
+      await ctx.skill.transform((editor) => {
+        for (const skill of skills) editor.add(skill)
+      })
 
-    return {
-      /**
-       * 配置钩子：将 OpenSpec 的 skills 目录和 slash commands 注入到 OpenCode 配置中
-       */
-      config: async (rawConfig) => {
-        const config = rawConfig as Record<string, any>
-
-        // config 最低优先级（env / options 已设置时被忽略）
-        applyDirectoryCandidate(config.openspec?.directory)
-
-        config.skills = config.skills || {}
-        config.skills.paths = config.skills.paths || []
-        if (!config.skills.paths.includes(skillsDir)) {
-          config.skills.paths.push(skillsDir)
+      // 用户已配置的同名 command 优先：先读取当前注册表，跳过已存在的名字
+      const existingCommands = new Set((await ctx.command.list()).data.map((command) => command.name))
+      const commands = loadCommands(commandsDir, skillsDir)
+      await ctx.command.transform((editor) => {
+        for (const command of commands) {
+          if (existingCommands.has(command.name)) continue
+          editor.add({
+            name: command.name,
+            description: command.description,
+            execute: async ({ sessionID, prompt, delivery }) => {
+              if (command.agent) await ctx.session.switchAgent({ sessionID, agent: command.agent })
+              const text = renderScriptCalls(command.template, skillsDir, directory).replaceAll(
+                "$ARGUMENTS",
+                () => prompt.text.trim(),
+              )
+              await ctx.session.prompt({ ...prompt, sessionID, text, delivery })
+            },
+          })
         }
+      })
 
-        config.command = config.command || {}
-        for (const cmd of loadCommands(commandsDir, skillsDir)) {
-          if (config.command[cmd.name]) continue
-          config.command[cmd.name] = {
-            template: cmd.template,
-            description: cmd.description,
-            agent: cmd.agent,
-            model: cmd.model,
-            subtask: cmd.subtask,
-          }
-        }
-      },
-
-      /**
-       * 消息转换钩子：在第一条用户消息前插入 bootstrap 提示
-       *
-       * 如果 bootstrap 已存在（如已被其他插件或历史注入），则跳过。
-       */
-      "experimental.chat.messages.transform": async (_input, output) => {
-        const bootstrap = getBootstrapContent()
-        if (!output.messages.length) return
-
-        const firstUser = output.messages.find(m => m.info.role === "user")
-        if (!firstUser || !firstUser.parts.length) return
-
-        if (firstUser.parts.some(p => p.type === "text" && p.text.includes("EXTREMELY_IMPORTANT"))) return
-
-        firstUser.parts.unshift({ type: "text", text: bootstrap } as typeof firstUser.parts[number])
-      },
+      await ctx.session.hook("context", (event) => {
+        if (event.system.some((part) => part.text.includes("EXTREMELY_IMPORTANT"))) return
+        event.system.push({ type: "text", text: bootstrap })
+      })
+      return () => cleanupSkillsDir(skillsDir)
+    } catch (error) {
+      try {
+        await cleanupSkillsDir(skillsDir)
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "Plugin setup and cleanup failed")
+      }
+      throw error
     }
   }
 }

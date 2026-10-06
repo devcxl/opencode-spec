@@ -6,12 +6,12 @@ This document describes the recommended way to use `opencode-spec`.
 
 ## 1. Install the Plugin
 
-Configure `opencode.json` in the project root:
+OpenCode V2 is required. Configure `opencode.json` in the project root:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@devcxl/opencode-spec"]
+  "plugins": ["@devcxl/opencode-spec"]
 }
 ```
 

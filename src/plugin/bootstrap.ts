@@ -1,28 +1,8 @@
-import { readFileSync } from "node:fs"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-
 import { loadPrompt } from "./prompts.js"
 
-let _bootstrapCache: string | undefined
-
-const _fallbackContent = readFileSync(
-  path.join(
-    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../.."),
-    "assets", "prompts", "bootstrap.md"
-  ),
-  "utf-8"
-)
-
-export async function initBootstrap() {
-  const content = await loadPrompt("bootstrap")
-  _bootstrapCache = content || undefined
-}
-
-export function getBootstrapContent(): string {
-  return _bootstrapCache ?? _fallbackContent
-}
-
-export function resetBootstrap() {
-  _bootstrapCache = undefined
+/** Bootstrap text belongs to one plugin location, not the server process. */
+export async function loadBootstrap(packageRoot: string, projectDir: string): Promise<string> {
+  const content = await loadPrompt(packageRoot, projectDir, "bootstrap")
+  if (!content) throw new Error("OpenSpec bootstrap prompt not found")
+  return content
 }

@@ -1,0 +1,5 @@
+# OpenCode V2-only plugin with a self-contained OpenSpec-style workflow
+
+Accepted 2026-10-07. This package targets OpenCode V2 only and keeps its workflow scripts self-contained rather than requiring the upstream OpenSpec CLI at runtime. OpenCode V1 and V2 use incompatible plugin APIs; maintaining both would duplicate registration and lifecycle behavior. Relying on the upstream CLI would reduce semantic drift but would also change the package's no-CLI prerequisite and deployment contract. The plugin owns OpenCode registration; the bundled scripts own change and spec operations.
+
+This decision does **not** claim full compatibility with the upstream terminal CLI. Changes to archive, validation, and schemas must be tested against explicit upstream behaviors before being described as compatible. Migrating from V1 requires updating the plugin configuration and using the V2 release; users who still need V1 can remain on the previous package release. Reconsider this decision if maintaining correct spec merges and validation in the bundled scripts becomes more expensive or less reliable than depending on a pinned upstream CLI.

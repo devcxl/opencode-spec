@@ -1,6 +1,7 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import { Plugin } from "@opencode/plugin"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+
 import { createOpencodeSpec } from "./plugin/server.js"
 
 /** 根据 import.meta.url 解析插件包的根目录路径 */
@@ -11,4 +12,8 @@ export function resolvePackageRoot(metaUrl: string) {
 /** 插件包的根目录 */
 const packageRoot = resolvePackageRoot(import.meta.url)
 
-export const OpencodeSpec: Plugin = createOpencodeSpec(packageRoot)
+/** OpenCode V2 插件定义 */
+export default Plugin.define({
+  id: "opencode-spec",
+  setup: createOpencodeSpec(packageRoot),
+})

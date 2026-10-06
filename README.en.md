@@ -16,7 +16,7 @@
 
 ## Core Capabilities
 
-The plugin injects these capabilities at runtime via OpenCode's `config` hook (no files are written to the project's `.opencode/` directory):
+The plugin targets OpenCode V2 and registers these capabilities at runtime (no files are written to the project's `.opencode/` directory):
 
 - **commands** (12): `/opsx-propose`, `/opsx-explore`, `/opsx-apply`, `/opsx-archive`, `/opsx-new-change`, `/opsx-continue-change`, `/opsx-ff-change`, `/opsx-update-change`, `/opsx-sync-specs`, `/opsx-verify-change`, `/opsx-bulk-archive`, `/opsx-onboard`
 - **skills** (12): `openspec-propose`, `openspec-explore`, `openspec-apply`, `openspec-archive` plus 8 extension skills (new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard)
@@ -25,12 +25,12 @@ Each skill includes built-in JavaScript reference scripts, replacing external op
 
 ## Installation
 
-Add to `opencode.json` at project root:
+OpenCode V2 is required. Add to `opencode.json` at the project root:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@devcxl/opencode-spec"]
+  "plugins": ["@devcxl/opencode-spec"]
 }
 ```
 
@@ -38,13 +38,13 @@ Prerequisite: **the shell used by OpenCode must be able to run `node` directly**
 
 ## Configuration
 
-By default, OpenSpec outputs to the `openspec/` directory under the project root. To customize, use the plugin tuple format to pass the `directory` option:
+By default, OpenSpec outputs to the `openspec/` directory under the project root. To customize, pass the `directory` option using the V2 plugin object format:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    ["@devcxl/opencode-spec", { "directory": "docs" }]
+  "plugins": [
+    { "package": "@devcxl/opencode-spec", "options": { "directory": "docs" } }
   ]
 }
 ```
@@ -82,10 +82,10 @@ explore (optional, use anytime)
 
 ## How Injection Works
 
-The plugin uses OpenCode's `config` hook to inject commands and skills at runtime:
+The plugin registers commands and skills at runtime through the OpenCode V2 plugin API:
 
-- **commands**: Parsed from `assets/commands/` and registered directly via `config.command` — available via `/` without any file sync
-- **skills**: Copied from `assets/skills/` to a system temp directory (`/tmp`), path placeholders are replaced in SKILL.md, then registered via `config.skills.paths`; temp directory is auto-cleaned on process exit
+- **commands**: Parsed from `assets/commands/` and registered at runtime — available via `/` without any file sync
+- **skills**: Copied from `assets/skills/` to a system temp directory, path placeholders are replaced in SKILL.md, then registered at runtime; the plugin cleans up the directory when unloaded
 
 ## Local Development
 
