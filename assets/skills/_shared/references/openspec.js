@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises"
+import { access, copyFile, lstat, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -246,6 +246,19 @@ function getArtifactDefinition(artifactId) {
   }
 
   return artifact
+}
+
+/**
+ * 读取变更目录下 .openspec.yaml 的 skip_specs 标记。
+ * 该标记表示此变更没有（也不应有）delta specs。
+ */
+async function readChangeSkipSpecs(changeDirPath) {
+  const openspecYaml = await readOptionalText(path.join(changeDirPath, ".openspec.yaml"))
+  if (!openspecYaml) {
+    return false
+  }
+
+  return parseSimpleDocument(openspecYaml).skip_specs === true
 }
 
 function hasLeadingZeroSegment(taskId) {
@@ -749,17 +762,12 @@ export async function getArtifactStatus(projectDir = projectRoot, name, artifact
 
   // Check if the change's .openspec.yaml declares skip_specs
   const changeDirPath = changeDir(projectDir, name)
-  const openspecYamlPath = path.join(changeDirPath, ".openspec.yaml")
-  const openspecYaml = await readOptionalText(openspecYamlPath)
-  if (openspecYaml) {
-    const parsed = parseSimpleDocument(openspecYaml)
-    if (parsed.skip_specs === true && artifactId === "specs") {
-      return {
-        existingPaths: [],
-        id: artifactId,
-        missingDeps: [],
-        state: "skipped",
-      }
+  if (artifactId === "specs" && (await readChangeSkipSpecs(changeDirPath))) {
+    return {
+      existingPaths: [],
+      id: artifactId,
+      missingDeps: [],
+      state: "skipped",
     }
   }
 
@@ -1025,7 +1033,8 @@ export async function validateChange(projectDir = projectRoot, name, options = {
   const checkedDesign = await checkFile(design, "design.md")
   const checkedTasks = await checkFile(tasks, "tasks.md")
 
-  if (specs.length === 0) {
+  // skip_specs 变更不要求 specs/*.md；缺失才是错误。
+  if (specs.length === 0 && !(await readChangeSkipSpecs(location.dirPath))) {
     ;(treatMissingAsError ? errors : warnings).push("缺少 specs/*.md")
   }
 
@@ -1088,29 +1097,85 @@ export async function verifyChange(projectDir = projectRoot, name) {
   }
 }
 
-export async function syncChangeSpecs(projectDir = projectRoot, name) {
-  const validation = await validateChange(projectDir, name, { strict: true })
-  const location = await resolveChangeLocation(projectDir, validation.slug)
-  if (!location) {
-    throw new Error(`未找到变更 ${validation.slug}`)
+const ARCHIVE_SPECS_STATES = ["synced", "skipped", "none"]
+
+/**
+ * 解析并校验调用方显式声明的 specs 状态。
+ *
+ * 归档本身不做语义合并：agent 负责把 delta specs 合并进主 specs，然后声明
+ * `synced`；用户确认跳过时声明 `skipped`；无 delta 时为 `none`。
+ */
+async function resolveArchiveSpecsState(projectDir, slug, declaredState) {
+  const state = typeof declaredState === "string" ? declaredState.trim() : ""
+  if (state && !ARCHIVE_SPECS_STATES.includes(state)) {
+    throw new Error(`--specs-state 取值无效：${state}（可选：${ARCHIVE_SPECS_STATES.join("、")}）`)
   }
 
-  const sourceDir = path.join(location.dirPath, "specs")
-  const specFiles = await listFilesRecursive(sourceDir)
-  const syncedFiles = []
+  const skipSpecs = await readChangeSkipSpecs(changeDir(projectDir, slug))
+  const hasDelta = (await detectArtifactPaths(projectDir, slug, "specs")).length > 0
 
-  for (const filePath of specFiles.filter((filePath) => filePath.endsWith(".md"))) {
-    const relativePath = toRelativePath(sourceDir, filePath)
-    const targetPath = path.join(specsRoot(projectDir), validation.slug, relativePath)
-    const content = await readFile(filePath, "utf8")
-    await writeText(targetPath, content)
-    syncedFiles.push(toRelativePath(projectDir, targetPath))
+  if (hasDelta && skipSpecs) {
+    throw new Error("specs 状态冲突：.openspec.yaml 声明 skip_specs: true，但变更仍包含 delta specs")
   }
 
-  return {
-    slug: validation.slug,
-    syncedFiles,
+  if (hasDelta) {
+    if (!state) {
+      throw new Error("该变更包含 delta specs，归档前必须显式声明 --specs-state=synced 或 --specs-state=skipped")
+    }
+    if (state === "none") {
+      throw new Error("specs 状态冲突：--specs-state=none 但该变更包含 delta specs")
+    }
+    return state
   }
+
+  if (skipSpecs) {
+    return "skipped"
+  }
+
+  if (state && state !== "none") {
+    throw new Error(`specs 状态冲突：--specs-state=${state} 但该变更没有 delta specs`)
+  }
+
+  return "none"
+}
+
+/** 校验 candidatePath 严格位于 baseDir 内，拦截路径越界。 */
+function assertContainedPath(baseDir, candidatePath, label) {
+  const relative = path.relative(path.resolve(baseDir), path.resolve(candidatePath))
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`${label}超出预期目录：${candidatePath}`)
+  }
+}
+
+/** 解析真实路径后再做包含校验，拦截经由中间符号链接的越界。 */
+async function assertRealPathContained(baseDir, candidatePath, label) {
+  const [base, candidate] = await Promise.all([realpath(baseDir), realpath(candidatePath)])
+  assertContainedPath(base, candidate, label)
+}
+
+/** lstat，仅在路径不存在时返回 null；其他错误照常抛出。 */
+async function lstatOrNull(candidatePath) {
+  try {
+    return await lstat(candidatePath)
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return null
+    }
+    throw error
+  }
+}
+
+/** 若路径存在且是符号链接则拒绝；用于防止移动到符号链接目标。 */
+async function assertNotSymlink(candidatePath, label) {
+  const info = await lstatOrNull(candidatePath)
+  if (info?.isSymbolicLink()) {
+    throw new Error(`${label}不能是符号链接：${candidatePath}`)
+  }
+}
+
+/** lstat 判定“目录项是否存在”，dangling symlink 也算存在。 */
+async function pathEntryExists(candidatePath) {
+  return (await lstatOrNull(candidatePath)) !== null
 }
 
 export async function getArchiveInstructions(projectDir = projectRoot, name) {
@@ -1124,24 +1189,39 @@ export async function getArchiveInstructions(projectDir = projectRoot, name) {
   }
 }
 
-export async function archiveChange(projectDir = projectRoot, name) {
+/**
+ * 归档：只做受控检查与目录移动，绝不写入主 specs。
+ *
+ * 语义合并由 agent（openspec-sync-specs）在调用前完成，或用
+ * `--specs-state=skipped` 显式声明由用户确认跳过。此处不做伪原子合并，
+ * 也不接受任何跳过 incomplete 校验的开关。
+ *
+ * 注意：openspec.js 已接近体量上限，archive/specs 逻辑后续应拆分到独立模块。
+ */
+export async function archiveChange(projectDir = projectRoot, name, options = {}) {
   const slug = slugify(name)
   const activeDir = changeDir(projectDir, slug)
   if (!(await pathExists(activeDir))) {
     throw new Error(`未找到活动变更 ${slug}`)
   }
 
+  // 硬阻塞：保留原有 incomplete 校验，不提供 --allow-incomplete 逃逸。
   const verification = await verifyChange(projectDir, slug)
   if (!verification.readyToArchive) {
     throw new Error(`归档失败：${verification.critical.join("；")}`)
   }
 
-  const syncResult = await syncChangeSpecs(projectDir, slug)
+  const specsState = await resolveArchiveSpecsState(projectDir, slug, options.specsState)
   const meta = await resolveChangeMeta(projectDir, slug)
-  const archivedAt = new Date()
-  const targetDir = datedArchiveChangeDir(projectDir, slug, archivedAt)
+  const targetDir = datedArchiveChangeDir(projectDir, slug, new Date())
 
-  if (await pathExists(targetDir)) {
+  assertContainedPath(changesRoot(projectDir), activeDir, "活动变更目录")
+  await assertNotSymlink(activeDir, "活动变更目录")
+  await assertRealPathContained(changesRoot(projectDir), activeDir, "活动变更目录")
+  assertContainedPath(archiveRoot(projectDir), targetDir, "归档目标目录")
+  await assertNotSymlink(targetDir, "归档目标目录")
+
+  if (await pathEntryExists(targetDir)) {
     throw new Error(`归档目标已存在：${path.basename(targetDir)}`)
   }
 
@@ -1154,7 +1234,8 @@ export async function archiveChange(projectDir = projectRoot, name) {
     schema: meta.schema,
     schemaName: meta.schema,
     slug,
-    specsMergedTo: syncResult.syncedFiles,
+    specsSkipped: specsState === "skipped",
+    specsState,
     success: true,
     warnings: verification.warnings,
   }

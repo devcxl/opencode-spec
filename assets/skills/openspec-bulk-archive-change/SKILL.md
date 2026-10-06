@@ -67,6 +67,7 @@ This skill allows you to batch-archive changes, handling spec conflicts intellig
       - If only one change is actually implemented -> sync that one's specs
       - If both implemented -> apply in chronological order (older first, newer overwrites)
       - If neither implemented -> skip spec sync, warn user
+   - Every spec sync is agent-driven; the archive program only moves the change. If a resolution requires skipping a sync, get explicit user confirmation before archiving that change.
 
 6. **Show consolidated status table**
 
@@ -92,20 +93,25 @@ This skill allows you to batch-archive changes, handling spec conflicts intellig
 
 8. **Execute archive for each confirmed change**
 
+   Reminder: the archive program is move-only. It never merges or writes specs; every merge below is agent work.
+
    Process changes in the determined order. For each change:
 
-   a. **Sync included delta specs**:
-      - Run the sync inline (agent-driven intelligent merge) for changes with delta specs, passing only the included delta paths
-      - Do not delegate to a background task — step 8c would move `changeRoot` out from under a sync
+   a. **Merge included delta specs (agent-driven)**:
+      - For changes with delta specs, run the agent-driven intelligent merge inline, passing only the included delta paths
+      - Do not delegate to a background task — step 8c would move `changeRoot` out from under a merge
 
    b. **Verify included delta specs before moving changeRoot**:
       - Re-run the comparison only for delta specs that were synced
-      - If sync failed, do not archive that change
+      - If the merge failed, do not archive that change
 
    c. **Perform the archive**:
       ```bash
-      node .opencode/skills/openspec-archive/references/archive.js --change="<name>"
+      node .opencode/skills/openspec-archive/references/archive.js --change="<name>" --specs-state=<synced|skipped>
       ```
+      - Pass `--specs-state=synced` after a verified merge
+      - Pass `--specs-state=skipped` only when the user explicitly confirmed skipping that change's sync
+      - Omit `--specs-state` when the change has no delta specs
 
 9. **Display summary**
 
@@ -131,3 +137,5 @@ This skill allows you to batch-archive changes, handling spec conflicts intellig
 - Never archive after the user cancels the confirmation
 - Track and report all outcomes (success/skip/fail)
 - Never archive a change while a spec sync is still in flight
+- The archive program never syncs or merges specs - do all merging yourself
+- Pass an explicit `--specs-state` when a change has delta specs; `--specs-state=skipped` requires explicit user confirmation

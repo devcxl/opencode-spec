@@ -151,12 +151,13 @@ All tasks done! The change is implemented! One more step—let's archive it.
 
 ## Phase 10: Archive
 
-**EXPLAIN:** When a change is complete, we archive it. Archived changes become your project's decision history.
+**EXPLAIN:** When a change is complete, we archive it. Archived changes become your project's decision history. The archive step is move-only — the program never merges or writes specs itself, so any delta specs must be merged into the main specs first.
 
-**DO:** Archive the change:
+**DO:** If the demo change has delta specs, merge them into the main specs yourself first (agent-driven, the same way `openspec-sync-specs` works). Then archive:
 ```bash
-node .opencode/skills/openspec-archive/references/archive.js --change="<name>"
+node .opencode/skills/openspec-archive/references/archive.js --change="<name>" --specs-state=synced
 ```
+If the demo change has no delta specs, omit `--specs-state` instead.
 
 ---
 
@@ -215,3 +216,4 @@ To pick up where we left off later:
 - **Pause for acknowledgment** at marked points, but don't over-pause
 - **Handle exits gracefully**—never pressure the user to continue
 - **Use real codebase tasks**—don't simulate or use fake examples
+- **Archive is move-only**—merge delta specs into main specs yourself before invoking `archive.js`

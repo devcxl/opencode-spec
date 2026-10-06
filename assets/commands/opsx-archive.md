@@ -18,11 +18,12 @@ node .opencode/skills/openspec-archive/references/archive.js --change="$ARGUMENT
 4. 如果存在 delta specs，评估与 main specs 的差异，提示用户是否需要同步
 5. 如果选择同步，先执行 `node .opencode/skills/openspec-propose/references/instructions.js specs --change="$ARGUMENTS"` 获取规则，然后内联执行 sync
 6. 同步完成后重新验证，确认 main specs 已正确更新
+7. 归档程序自身不做任何 spec 合并：它只校验你声明的 `--specs-state` 并移动目录。有 delta specs 时必须显式声明：已同步传 `synced`；用户明确确认跳过同步传 `skipped`
 
-然后执行：
+然后执行（有 delta specs 时带上 `--specs-state`；无 delta specs 时省略）：
 
 ```bash
-node .opencode/skills/openspec-archive/references/archive.js --change="$ARGUMENTS"
+node .opencode/skills/openspec-archive/references/archive.js --change="$ARGUMENTS" --specs-state=<synced|skipped>
 ```
 
 输出示例（成功）：
@@ -33,7 +34,7 @@ node .opencode/skills/openspec-archive/references/archive.js --change="$ARGUMENT
 **Change:** <change-name>
 **Schema:** spec-driven
 **Archived to:** openspec/changes/archive/YYYY-MM-DD-<name>/
-**Specs:** ✓ Synced to main specs
+**Specs:** ✓ Synced by agent merge
 
 All artifacts complete. All tasks complete.
 ```

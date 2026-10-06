@@ -1,4 +1,4 @@
-import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { access, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
@@ -76,6 +76,17 @@ async function runJson(projectDir: string, scriptRelativePath: string, args: str
   return JSON.parse(stdout) as Record<string, unknown>
 }
 
+const ARCHIVE_SCRIPT = ".opencode/skills/openspec-archive/references/archive.js"
+
+async function prepareChange(projectDir: string, displayName: string) {
+  const created = await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", [displayName])
+  const slug = String(created.slug)
+  const baseDir = path.join(projectDir, "openspec", "changes", slug)
+  await writeFile(path.join(baseDir, "design.md"), "# Design\n", "utf8")
+  await writeFile(path.join(baseDir, "tasks.md"), "# Tasks\n\n## Implementation\n- [x] 1.1 完成实现\n", "utf8")
+  return { baseDir, slug }
+}
+
 describe("reference scripts", () => {
   it("new-change 与 status 能在同步目录下正常工作", async () => {
     const projectDir = await createWorkspace()
@@ -115,23 +126,142 @@ describe("reference scripts", () => {
     expect(tasksContent).toContain("- 已跑单测")
   })
 
-  it("archive 会同步 specs 并写入带日期前缀的归档目录", async () => {
+  it("archive 是 move-only：不覆盖 agent 已同步的主 spec，也不再声称已合并", async () => {
     const projectDir = await createWorkspace()
-    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Archive Change"])
+    const { baseDir, slug } = await prepareChange(projectDir, "Archive Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
 
-    const baseDir = path.join(projectDir, "openspec", "changes", "archive-change")
-    await writeFile(path.join(baseDir, "design.md"), "# Design\n", "utf8")
-    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Spec\n", "utf8")
-    await writeFile(
-      path.join(baseDir, "tasks.md"),
-      "# Tasks\n\n## Implementation\n- [x] 1.1 完成实现\n\n## Verification\n- [x] 2.1 完成验证\n\n## Verification Notes\n- 已验证\n",
-      "utf8",
-    )
+    const mainSpecDir = path.join(projectDir, "openspec", "specs", slug)
+    await mkdir(mainSpecDir, { recursive: true })
+    const mainSpecPath = path.join(mainSpecDir, "spec.md")
+    await writeFile(mainSpecPath, "# Agent Merged Spec\n", "utf8")
 
-    const archived = await runJson(projectDir, ".opencode/skills/openspec-archive/references/archive.js", ["--change=archive-change"])
-    expect(String(archived.archivedTo)).toMatch(/openspec\/changes\/archive\/\d{4}-\d{2}-\d{2}-archive-change/)
-    expect(archived.specsMergedTo).toEqual(["openspec/specs/archive-change/spec.md"])
-    expect(await exists(path.join(projectDir, "openspec", "specs", "archive-change", "spec.md"))).toBe(true)
+    const archived = await runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"])
+
+    expect(String(archived.archivedTo)).toMatch(new RegExp(`openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-${slug}`))
+    expect(archived.specsState).toBe("synced")
+    expect(archived.specsSkipped).toBe(false)
+    expect(archived).not.toHaveProperty("specsMergedTo")
+    expect(await readFile(mainSpecPath, "utf8")).toBe("# Agent Merged Spec\n")
+    expect(await exists(baseDir)).toBe(false)
+  })
+
+  it("归档目标冲突时拒绝，且不改动 specs、不移动变更", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Conflict Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+
+    const mainSpecDir = path.join(projectDir, "openspec", "specs", slug)
+    await mkdir(mainSpecDir, { recursive: true })
+    const mainSpecPath = path.join(mainSpecDir, "spec.md")
+    await writeFile(mainSpecPath, "# Agent Merged Spec\n", "utf8")
+
+    const datePrefix = new Date().toISOString().slice(0, 10)
+    await mkdir(path.join(projectDir, "openspec", "changes", "archive", `${datePrefix}-${slug}`), { recursive: true })
+
+    await expect(runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"])).rejects.toThrow()
+    expect(await readFile(mainSpecPath, "utf8")).toBe("# Agent Merged Spec\n")
+    expect(await exists(baseDir)).toBe(true)
+  })
+
+  it("有 delta 但未声明 --specs-state 时拒绝归档", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Undeclared Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+
+    await expect(runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug])).rejects.toThrow(/--specs-state/)
+    expect(await exists(baseDir)).toBe(true)
+    expect(await exists(path.join(projectDir, "openspec", "specs", slug))).toBe(false)
+  })
+
+  it("--specs-state=none 与 delta 冲突时拒绝归档", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "None Conflict Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+
+    await expect(
+      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=none"]),
+    ).rejects.toThrow(/冲突|none/)
+    expect(await exists(baseDir)).toBe(true)
+  })
+
+  it("--specs-state 取值无效时拒绝归档", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Bad State Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+
+    await expect(
+      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=merged"]),
+    ).rejects.toThrow(/--specs-state/)
+    expect(await exists(baseDir)).toBe(true)
+  })
+
+  it("delta 与 skip_specs 标记冲突时拒绝归档", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Marker Conflict Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+    await writeFile(path.join(baseDir, ".openspec.yaml"), "skip_specs: true\n", "utf8")
+
+    await expect(
+      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"]),
+    ).rejects.toThrow(/冲突|skip_specs/)
+    expect(await exists(baseDir)).toBe(true)
+  })
+
+  it("skip_specs: true 且无 delta 时可归档，且不写主 spec", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Skip Specs Change")
+    await writeFile(path.join(baseDir, ".openspec.yaml"), "skip_specs: true\n", "utf8")
+
+    const archived = await runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug])
+
+    expect(archived.specsState).toBe("skipped")
+    expect(archived.specsSkipped).toBe(true)
+    expect(await exists(baseDir)).toBe(false)
+    expect(await exists(path.join(projectDir, "openspec", "specs", slug))).toBe(false)
+  })
+
+  it("--specs-state=skipped 显式跳过时可归档，且不写主 spec", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Explicit Skip Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+
+    const archived = await runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=skipped"])
+
+    expect(archived.specsState).toBe("skipped")
+    expect(archived.specsSkipped).toBe(true)
+    expect(await exists(baseDir)).toBe(false)
+    expect(await exists(path.join(projectDir, "openspec", "specs", slug))).toBe(false)
+  })
+
+  it("归档目标是符号链接时拒绝，不移动变更", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Symlink Target Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+
+    const datePrefix = new Date().toISOString().slice(0, 10)
+    const archiveRoot = path.join(projectDir, "openspec", "changes", "archive")
+    await mkdir(archiveRoot, { recursive: true })
+    const outsideDir = path.join(projectDir, "outside-target")
+    await mkdir(outsideDir, { recursive: true })
+    await symlink(outsideDir, path.join(archiveRoot, `${datePrefix}-${slug}`), "dir")
+
+    await expect(
+      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"]),
+    ).rejects.toThrow(/符号链接/)
+    expect(await exists(baseDir)).toBe(true)
+  })
+
+  it("未完成任务时归档被硬阻塞，且不存在 --allow-incomplete 逃逸", async () => {
+    const projectDir = await createWorkspace()
+    const { baseDir, slug } = await prepareChange(projectDir, "Incomplete Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
+    await writeFile(path.join(baseDir, "tasks.md"), "# Tasks\n\n## Implementation\n- [ ] 1.1 待办\n", "utf8")
+
+    await expect(
+      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced", "--allow-incomplete"]),
+    ).rejects.toThrow(/归档失败|未完成/)
+    expect(await exists(baseDir)).toBe(true)
   })
 
   it("archived change lookup does not match suffix-only slugs", async () => {

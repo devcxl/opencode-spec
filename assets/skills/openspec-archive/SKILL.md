@@ -66,12 +66,10 @@ Archive a completed change in the OpenSpec workflow.
 
 4. **Assess delta spec sync state**
 
-   Use `artifactPaths.specs.existingOutputPaths` from status JSON as the only delta-spec source. If the `specs` entry is missing or `existingOutputPaths` is empty, proceed without a sync prompt.
+   Use `artifactPaths.specs.existingOutputPaths` from status JSON as the only delta-spec source.
 
-   **If delta specs exist:**
-   - Compare each delta spec with its corresponding main spec at `<planningHome.root>/openspec/specs/<capability-path>/spec.md` (use the store-aware `planningHome.root` from step 2)
-   - Determine what changes would be applied (adds, modifications, removals, renames)
-   - Show a combined summary before prompting
+   - If the `specs` artifact state is `skipped` (the change declares `skip_specs`) or `existingOutputPaths` is empty, there are no delta specs. Do not prompt for sync.
+   - If delta specs exist, compare each delta spec with its corresponding main spec at `<planningHome.root>/openspec/specs/<capability-path>/spec.md` (use the store-aware `planningHome.root` from step 2), determine what changes would be applied (adds, modifications, removals, renames), and show a combined summary before prompting.
 
    **Prompt options:**
    - If changes needed: "Sync now (recommended)", "Archive without syncing"
@@ -79,9 +77,12 @@ Archive a completed change in the OpenSpec workflow.
 
    Route on the answer:
    - "Cancel" — stop, do not archive
-   - "Archive without syncing" or "Archive now" — proceed to archive
-   - "Sync now" or "Sync anyway" — sync, then verify (below)
+   - "Sync now" or "Sync anyway" — perform the agent-driven merge below, verify it, then archive with `--specs-state=synced`
+   - "Archive now" (already synced) — archive with `--specs-state=synced`
+   - "Archive without syncing" — you MUST ask a second confirming question ("Archive without syncing specs?") and proceed only on an explicit yes; then archive with `--specs-state=skipped`. Anything other than a clear confirmation stops the archive.
    - Anything else — ask again rather than archiving
+
+   **The archive program never merges or writes specs.** It only checks the declared `--specs-state` and moves the change. All semantic merging is agent work performed here.
 
    Before a selected sync writes any main spec, run `node .opencode/skills/openspec-propose/references/instructions.js specs --change="<name>"` once. If the lookup fails or returns invalid JSON, report the error and stop before writing any main spec or moving the change. Apply returned `rules` only to the content and form of main specs produced by this merge; do not use them as archive guidance, change CLI behavior, or copy the rule text into any output file.
 
@@ -91,15 +92,21 @@ Archive a completed change in the OpenSpec workflow.
 
 5. **Perform the archive**
 
+   Archive is move-only: it never writes main specs and never merges deltas. Pass the state you established in step 4.
+
    ```bash
-   node .opencode/skills/openspec-archive/references/archive.js --change="<name>"
+   node .opencode/skills/openspec-archive/references/archive.js --change="<name>" --specs-state=<synced|skipped>
    ```
+
+   - Pass `--specs-state=synced` only after a verified agent merge.
+   - Pass `--specs-state=skipped` only after the user explicitly confirmed archiving without syncing.
+   - Omit `--specs-state` only when no delta specs exist. When the change declares `skip_specs`, the tool reports `specsSkipped: true`.
 
    Generate target name using current date: `YYYY-MM-DD-<name>`
 
    **Check if target already exists:**
-   - If yes: Fail with error, suggest renaming existing archive or using different date
-   - If no: Move the change directory to archive
+   - The program fails before moving anything if `openspec/changes/archive/YYYY-MM-DD-<name>/` already exists or is a symlink.
+   - In that case no specs are modified and the change stays active. Suggest renaming the existing archive or using a different date.
 
 6. **Display summary**
 
@@ -118,7 +125,7 @@ Archive a completed change in the OpenSpec workflow.
 **Change:** <change-name>
 **Schema:** <schema-name>
 **Archived to:** openspec/changes/archive/YYYY-MM-DD-<name>/
-**Specs:** ✓ Synced to main specs (or "No delta specs" or "Sync skipped")
+**Specs:** <"✓ Synced by agent merge" | "No delta specs" | "Skipped — archived without syncing (user confirmed)">
 
 <"All artifacts complete. All tasks complete." — or, if archived with warnings, list them instead>
 ```
@@ -129,8 +136,11 @@ Archive a completed change in the OpenSpec workflow.
 - Don't block archive on warnings - just inform and confirm
 - When moving to archive, the change directory moves as-is with the date prefix
 - Show clear summary of what happened
+- The archive program never syncs or merges specs - perform every merge yourself before invoking it
 - If sync is requested, run the inline sync and verify the main specs before moving `changeRoot`
 - If delta specs exist, always run the sync assessment and show the combined summary before prompting
+- Pass an explicit `--specs-state` whenever delta specs exist; `--specs-state=skipped` requires explicit user confirmation
+- Never bypass the incomplete-change hard block: archive.js refuses to move a change with incomplete tasks or missing planning artifacts, and there is no override flag
 - Apply relevant runtime context and report conflicts; operation guidance remains advisory
 - Consider every guidance entry and explain any inapplicable or conflicting advice
 - Existing CLI checks, resolved paths, prompts, and command contracts are unchanged
