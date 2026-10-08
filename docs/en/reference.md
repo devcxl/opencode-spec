@@ -48,8 +48,8 @@ explore (optional, use anytime)
 The OpenCode V2 plugin registers commands and skills at runtime without writing integration files to the project's `.opencode/` directory:
 
 - **commands**: Parsed from `assets/commands/*.md` and registered via `ctx.command.transform`
-- **skills**: Copied to a system temp directory, paths replaced, then registered via `ctx.skill.transform`; removed on unload
+- **skills**: Read directly from the plugin package, with script paths rendered in memory before `ctx.skill.transform`; no temporary copy is created
 
 Prerequisite: **the shell used by OpenCode must be able to run `node` directly**.
 
-SKILL.md files reference scripts using `.opencode/skills/` as a path placeholder. These calls are replaced at runtime with quoted temporary paths and per-workspace `OPENSPEC_DIR`, so no corresponding files need to exist in the project directory.
+SKILL.md files reference scripts using `.opencode/skills/` as a path placeholder. Registration replaces it with a quoted package path in memory; each invocation receives its workspace-specific `OPENSPEC_DIR`, so no scripts need to be installed in the project directory.

@@ -17,22 +17,20 @@ OpenCode invokes the registered commands and skills. A command submits its rende
 
 The plugin completes injection through these steps:
 
-### 1. Skill temp directory setup (`setupSkillsDir`)
+### 1. Register skills directly from the package
 
-```
-assets/skills/                   /tmp/opencode-spec-skills-XXXX/skills/
-├── openspec-propose/     →      ├── openspec-propose/
-│   ├── SKILL.md                  │   ├── SKILL.md (paths replaced)
-│   └── references/               │   └── references/
-├── openspec-apply/        →      ├── openspec-apply/
-├── openspec-archive/      →      ├── openspec-archive/
-└── openspec-explore/      →      └── openspec-explore/
+```text
+<package>/assets/skills/                 OpenCode V2 Skill.Info
+├── openspec-propose/SKILL.md     ───→  path points to the package file
+│   └── references/                      script paths are rendered in memory
+└── ...
 ```
 
-- Copies `assets/skills/` from the plugin package to a system temp directory (`/tmp/opencode-spec-skills-<random>/skills/`)
-- Rewrites script paths and passes the workspace-specific `OPENSPEC_DIR` to each script invocation
-- Parses and registers the 12 skills through `ctx.skill.transform`
-- Removes the temporary directory when the plugin unloads, including failed setup
+- Reads skill files from the package's `assets/skills/`; it does not copy them to a temp or project directory
+- Rewrites `.opencode/skills/` placeholders to package script paths in memory; source files remain unchanged
+- Registers 12 built-in skills and 2 aliases (14 entries) through `ctx.skill.transform`
+- Unloading requires no resource-copy cleanup
+- Built-in templates are read from package `assets/templates/`, after project overrides and before the default fallback
 
 ### 2. Command registration (`loadCommands`)
 
@@ -45,8 +43,8 @@ assets/commands/            ctx.command.transform
 ```
 
 - Parses frontmatter and template content from `assets/commands/*.md`
-- Replaces `.opencode/skills/` paths in templates with temp skill directory paths
-- Registers all 12 commands through `ctx.command.transform`, making them available via `/`
+- Replaces `.opencode/skills/` paths in templates with package script paths
+- Registers 12 base commands and 6 aliases (18 entries) through `ctx.command.transform`
 - If a command with the same name already exists in `opencode.json`, the plugin will not override it
 
 ### 3. Guidance context (`ctx.session.hook("context")`)
@@ -64,7 +62,7 @@ The plugin uses its own bundled OpenSpec-style scripts, not the upstream `opensp
 SKILL.md files reference scripts using this pattern:
 
 ```
-OPENSPEC_DIR='docs' node '/tmp/opencode-spec-skills-XXXX/skills/openspec-propose/references/new-change.js' "<name>"
+OPENSPEC_DIR='docs' node '<package-root>/assets/skills/openspec-propose/references/new-change.js' "<name>"
 ```
 
-`.opencode/skills/` is a source placeholder replaced with a quoted temporary script path. `OPENSPEC_DIR` is set for each invocation, not written into the shared server environment; by default it is `openspec`.
+`.opencode/skills/` is a placeholder in skill content, replaced in memory with a quoted package script path during registration. `OPENSPEC_DIR` is set for each invocation, not written into the shared server environment; by default it is `openspec`.

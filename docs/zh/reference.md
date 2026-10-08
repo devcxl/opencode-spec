@@ -48,8 +48,8 @@ explore（可选，随时使用）
 OpenCode V2 插件在运行时注册 commands 和 skills，不向项目 `.opencode/` 目录写入集成文件：
 
 - **commands**：解析 `assets/commands/*.md` 后通过 `ctx.command.transform` 注册
-- **skills**：复制到系统临时目录、改写路径后通过 `ctx.skill.transform` 注册；插件卸载时清理
+- **skills**：直接从插件包读取，在内存中改写脚本路径后通过 `ctx.skill.transform` 注册；不创建临时副本
 
 前置条件：**OpenCode 所使用的 shell 必须能直接执行 `node`**。
 
-SKILL.md 中的 `.opencode/skills/` 脚本占位符会在运行时替换为带引号的临时路径，并为每次调用传递所属项目的 `OPENSPEC_DIR`，无需项目目录存在对应文件。
+SKILL.md 中的 `.opencode/skills/` 脚本占位符会在注册时替换为带引号的包内路径，并为每次调用传递所属项目的 `OPENSPEC_DIR`，无需在项目目录安装对应文件。

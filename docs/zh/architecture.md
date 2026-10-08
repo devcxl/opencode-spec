@@ -17,22 +17,20 @@ OpenCode 调用已注册的命令和技能；命令通过 `ctx.session.prompt` �
 
 插件启动时按以下步骤完成注入：
 
-### 1. Skill 临时目录构建（`setupSkillsDir`）
+### 1. 直接从插件包注册 Skills
 
-```
-assets/skills/                   /tmp/opencode-spec-skills-XXXX/skills/
-├── openspec-propose/     →      ├── openspec-propose/
-│   ├── SKILL.md                  │   ├── SKILL.md (路径已替换)
-│   └── references/               │   └── references/
-├── openspec-apply/        →      ├── openspec-apply/
-├── openspec-archive/      →      ├── openspec-archive/
-└── openspec-explore/      →      └── openspec-explore/
+```text
+<package>/assets/skills/                 OpenCode V2 Skill.Info
+├── openspec-propose/SKILL.md     ───→  path 指向包内文件
+│   └── references/                      content 中的脚本路径在内存中改写
+└── ...
 ```
 
-- 将插件包内 `assets/skills/` 复制到系统临时目录（`/tmp/opencode-spec-skills-<random>/skills/`）
-- 改写参考脚本路径，并为每次调用单独传递所属项目的 `OPENSPEC_DIR`
-- 解析并通过 `ctx.skill.transform` 注册 12 个技能
-- 插件卸载或启动失败时清理临时目录
+- 从插件包的 `assets/skills/` 读取 skill 文件，不复制到临时目录或项目目录
+- 注册前在内存中把 `.opencode/skills/` 占位符改写为包内脚本路径；源文件保持不变
+- 通过 `ctx.skill.transform` 注册 12 个内置技能及 2 个别名，共 14 个条目
+- 卸载时无需清理资源副本
+- 内置模板从包内 `assets/templates/` 读取；项目自定义模板优先，默认模板作为缺失时的兜底
 
 ### 2. Command 注册（`loadCommands`）
 
@@ -45,8 +43,8 @@ assets/commands/            ctx.command.transform
 ```
 
 - 解析 `assets/commands/*.md` 的 frontmatter 和模板内容
-- 模板中 `.opencode/skills/` 路径同样替换为临时 skill 目录路径
-- 通过 `ctx.command.transform` 注册 12 个命令，用户即可通过 `/` 触发
+- 模板中 `.opencode/skills/` 路径替换为包内脚本路径
+- 通过 `ctx.command.transform` 注册 12 个基础命令及 6 个别名，共 18 个条目
 - 如果 `opencode.json` 中已存在同名 command 定义，插件不会覆盖
 
 ### 3. 会话引导（`ctx.session.hook("context")`）
@@ -64,7 +62,7 @@ assets/commands/            ctx.command.transform
 Skills 的 SKILL.md 中引用参考脚本的写法：
 
 ```
-OPENSPEC_DIR='docs' node '/tmp/opencode-spec-skills-XXXX/skills/openspec-propose/references/new-change.js' "<name>"
+OPENSPEC_DIR='docs' node '<package-root>/assets/skills/openspec-propose/references/new-change.js' "<name>"
 ```
 
-`.opencode/skills/` 是源码中的路径占位符，运行时会改写成带引号的临时脚本路径。每次调用单独设置 `OPENSPEC_DIR`，不会写入共享服务进程的环境变量；默认目录为 `openspec`。
+`.opencode/skills/` 是 skill 内容中的路径占位符，注册时在内存中改写为带引号的包内脚本路径。每次调用单独设置 `OPENSPEC_DIR`，不会写入共享服务进程的环境变量；默认目录为 `openspec`。

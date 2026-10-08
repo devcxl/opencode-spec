@@ -16,11 +16,11 @@ Verify the plugin's built-in reference scripts are available (no external CLI re
 test -f .opencode/skills/openspec-propose/references/new-change.js && echo "SCRIPTS_OK" || echo "SCRIPTS_MISSING"
 ```
 
-> Note: this `.opencode/skills/` path is rewritten by the plugin's skill deployment
-> (`setupSkillsDir`) to point at the actual temp directory where skills are installed.
+> Note: `.opencode/skills/` is a source placeholder. The plugin rewrites it in memory
+> to the reference script path inside the installed package.
 
 **If scripts missing:**
-> The reference scripts are not installed. Make sure the opencode-spec plugin is enabled, then come back to `/opsx-onboard`.
+> The reference scripts are unavailable. Make sure the opencode-spec plugin is enabled and installed correctly, then come back to `/opsx-onboard`.
 
 Stop here if missing.
 

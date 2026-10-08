@@ -85,7 +85,7 @@ explore (optional, use anytime)
 The plugin registers commands and skills at runtime through the OpenCode V2 plugin API:
 
 - **commands**: Parsed from `assets/commands/` and registered at runtime — available via `/` without any file sync
-- **skills**: Copied from `assets/skills/` to a system temp directory, path placeholders are replaced in SKILL.md, then registered at runtime; the plugin cleans up the directory when unloaded
+- **skills**: Read directly from the package's `assets/skills/`; script paths are rendered in memory before registration, with no temporary copy or project-local installation
 
 ## Local Development
 
