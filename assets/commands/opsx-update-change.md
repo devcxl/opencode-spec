@@ -1,6 +1,5 @@
 ---
 description: 更新 planning artifacts 并保持一致性
-agent: build
 ---
 
 更新 OpenSpec change `$ARGUMENTS` 的 planning artifacts。

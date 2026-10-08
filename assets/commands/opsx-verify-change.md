@@ -1,6 +1,5 @@
 ---
 description: 验证实现与 artifact 是否匹配
-agent: build
 ---
 
 验证 OpenSpec change `$ARGUMENTS` 的实现是否与 artifact 匹配。

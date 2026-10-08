@@ -1,6 +1,5 @@
 ---
 description: 同步 delta specs 到 main specs
-agent: build
 ---
 
 将 OpenSpec change `$ARGUMENTS` 的 delta specs 智能合并到 main specs。

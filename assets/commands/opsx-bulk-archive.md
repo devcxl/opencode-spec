@@ -1,6 +1,5 @@
 ---
 description: 批量归档多个变更
-agent: build
 ---
 
 批量归档多个 OpenSpec changes。

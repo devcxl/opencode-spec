@@ -1,6 +1,5 @@
 ---
 description: 归档 OpenSpec change（含 delta spec 同步与验证）
-agent: build
 ---
 
 归档 OpenSpec change `$ARGUMENTS`。

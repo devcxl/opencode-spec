@@ -1,6 +1,5 @@
 ---
 description: 快速创建所有 planning artifacts
-agent: build
 ---
 
 快速创建 OpenSpec change `$ARGUMENTS` 的所有 planning artifacts。

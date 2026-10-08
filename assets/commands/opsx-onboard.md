@@ -1,6 +1,5 @@
 ---
 description: 引导式上手指南
-agent: build
 ---
 
 引导用户完成第一个完整的 OpenSpec 工作流周期。

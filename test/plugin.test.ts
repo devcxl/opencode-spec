@@ -160,7 +160,7 @@ describe("OpencodeSpec v2 commands registration", () => {
     expect(state.commands.get("opsx-new")!.description).toBe(state.commands.get("opsx-new-change")!.description)
   })
 
-  it("执行 command 时渲染 $ARGUMENTS、替换 skills 路径并切换 agent", async () => {
+  it("执行 command 时渲染 $ARGUMENTS、替换 skills 路径且不切换 agent", async () => {
     const state = await setup()
     const prompt = await runCommand(state, "opsx-propose", "my-change")
 
@@ -168,7 +168,7 @@ describe("OpencodeSpec v2 commands registration", () => {
     expect(prompt.text).not.toContain("$ARGUMENTS")
     expect(prompt.text).not.toContain(".opencode/skills/")
     expect(prompt.delivery).toBe("queue")
-    expect(state.switchedAgents).toEqual([{ sessionID: "session-1", agent: "build" }])
+    expect(state.switchedAgents).toEqual([])
   })
 
   it("不覆盖用户已存在的同名 command", async () => {

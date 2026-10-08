@@ -1,6 +1,5 @@
 ---
 description: 执行 OpenSpec tasks（融入运行时上下文与操作指南）
-agent: build
 ---
 
 执行 OpenSpec change `$ARGUMENTS` 的任务。

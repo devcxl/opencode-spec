@@ -1,6 +1,5 @@
 ---
 description: 继续创建下一个 artifact
-agent: build
 ---
 
 继续 OpenSpec change `$ARGUMENTS`，创建下一个 artifact。

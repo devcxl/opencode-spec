@@ -1,6 +1,5 @@
 ---
 description: 启动新变更，逐步创建 artifact
-agent: build
 ---
 
 启动新变更，使用逐步 artifact 创建方式。
