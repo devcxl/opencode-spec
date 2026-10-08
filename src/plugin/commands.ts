@@ -31,9 +31,6 @@ function extractAndStripFrontmatter(content: string) {
 export interface ParsedCommand {
   name: string
   description?: string
-  agent?: string
-  model?: string
-  subtask?: boolean
   template: string
 }
 
@@ -54,7 +51,7 @@ export const COMMAND_ALIASES: Record<string, string> = {
  * 从 commandsDir 加载所有 slash command
  *
  * 遍历目录下的所有 .md 文件，解析 frontmatter 获取命令的元数据，
- * 并将 skills 路径替换为运行时动态创建的 skills 目录。
+ * 并将 skills 路径替换为插件包内的 skills 目录。
  * 同时注册官方简写别名（如 /opsx-new -> /opsx-new-change）。
  */
 export function loadCommands(commandsDir: string, skillsDir: string): ParsedCommand[] {
@@ -80,9 +77,6 @@ export function loadCommands(commandsDir: string, skillsDir: string): ParsedComm
     const cmd: ParsedCommand = {
       name,
       description: frontmatter.description,
-      agent: frontmatter.agent,
-      model: frontmatter.model,
-      subtask: frontmatter.subtask === "true" ? true : frontmatter.subtask === "false" ? false : undefined,
       template,
     }
     parsed.push(cmd)

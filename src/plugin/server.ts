@@ -57,7 +57,6 @@ export function createOpencodeSpec(packageRoot: string) {
           name: command.name,
           description: command.description,
           execute: async ({ sessionID, prompt, delivery }) => {
-            if (command.agent) await ctx.session.switchAgent({ sessionID, agent: command.agent })
             const text = renderScriptCalls(command.template, sourceSkillsDir, directory).replaceAll(
               "$ARGUMENTS",
               () => prompt.text.trim(),
