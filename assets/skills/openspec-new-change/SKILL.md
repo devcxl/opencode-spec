@@ -21,13 +21,13 @@ Start a new change using the step-by-step artifact-driven approach.
 
 2. **Create the change directory**
    ```bash
-   node .opencode/skills/openspec-propose/references/new-change.js "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js new-change "<name>"
    ```
    This creates a scaffolded change at `openspec/changes/<name>/`.
 
 3. **Show the artifact status**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
    Use the returned `planningHome`, `changeRoot`, `artifactPaths`, and `artifacts` instead of assuming repo-local paths.
 
@@ -35,7 +35,7 @@ Start a new change using the step-by-step artifact-driven approach.
    The first artifact depends on the schema (e.g., `proposal` for spec-driven).
    Check the status output to find the first artifact with status "ready".
    ```bash
-   node .opencode/skills/openspec-propose/references/instructions.js <first-artifact-id> --change="<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js instructions <first-artifact-id> --change="<name>"
    ```
    This outputs the template and context for creating the first artifact.
 

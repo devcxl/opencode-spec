@@ -7,8 +7,8 @@ description: 启动新变更，逐步创建 artifact
 先执行：
 
 ```bash
-node .opencode/skills/openspec-propose/references/new-change.js "$ARGUMENTS"
-node .opencode/skills/openspec-propose/references/status.js "$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js new-change "$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js status "$ARGUMENTS"
 ```
 
 然后：

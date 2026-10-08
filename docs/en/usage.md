@@ -78,13 +78,13 @@ Archive completed change.
 | Skill | `openspec-bulk-archive-change` | Agent invokes directly |
 | Skill | `openspec-onboard` | Agent invokes directly |
 
-## 4. Built-in Reference Scripts
+## 4. Built-in Reference CLI
 
-Each skill includes JavaScript scripts in the plugin's `assets/skills/<skill-name>/references/` directory, executed via `node`:
+All skills execute the shared Node CLI at `assets/skills/_shared/references/openspec-cli.js`:
 
-- `openspec-propose`: new-change.js, status.js, instructions.js
-- `openspec-explore`: list.js
-- `openspec-apply`: prepare-apply.js, mark-tasks.js
-- `openspec-archive`: archive.js
+- `list`
+- `new-change <name>`, `status <name>`, `instructions <artifact-id> --change=<name>`
+- `prepare-apply --change=<name>`, `mark-tasks --change=<name> ...`
+- `archive --change=<name> ...` (including the `--instructions` mode)
 
-These scripts replace external openspec CLI and directly manipulate the `openspec/` directory structure. Extension skills (new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard) reuse the core scripts above for their workflows.
+The CLI dispatches to the shared workflow implementation in `openspec.js`; it replaces the external OpenSpec CLI without adding that dependency. Extension skills reuse these same subcommands.

@@ -21,13 +21,13 @@ Fast-forward through artifact creation - generate everything needed to start imp
 
 2. **Create the change directory**
    ```bash
-   node .opencode/skills/openspec-propose/references/new-change.js "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js new-change "<name>"
    ```
    This creates a scaffolded change at `openspec/changes/<name>/`.
 
 3. **Get the artifact build order**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
    Parse the JSON to get:
    - `applyRequires`: array of artifact IDs needed before implementation (e.g., `["tasks"]`)
@@ -43,7 +43,7 @@ Fast-forward through artifact creation - generate everything needed to start imp
    a. **For each artifact that is `ready` (dependencies satisfied)**:
       - Get instructions:
         ```bash
-        node .opencode/skills/openspec-propose/references/instructions.js <artifact-id> --change="<name>"
+         node .opencode/skills/_shared/references/openspec-cli.js instructions <artifact-id> --change="<name>"
         ```
       - The instructions JSON includes:
         - `context`: Project background (constraints for you - do NOT include in output)
@@ -60,7 +60,7 @@ Fast-forward through artifact creation - generate everything needed to start imp
       - Show brief progress: "✓ Created <artifact-id>"
 
    b. **Continue until every artifact in the required set exists (not just `apply.requires`)**
-      - After creating each artifact, re-run `node .opencode/skills/openspec-propose/references/status.js "<name>"`
+       - After creating each artifact, re-run `node .opencode/skills/_shared/references/openspec-cli.js status "<name>"`
       - The required set is `applyRequires` plus every artifact reachable from those by following the `requires` edges in `status` - walk them transitively (spec-driven closes over proposal, specs, design, tasks). Leave artifacts outside that set alone
       - `status` is file-existence only, so an `applyRequires` artifact reading `done` does NOT mean its dependencies exist. Use each artifact's `requires` edges, not its `status`, to build the required set
       - An artifact already reading `status: "skipped"` is satisfied: the change declares `skip_specs`, so its files must NOT exist. Never try to create one
@@ -74,7 +74,7 @@ Fast-forward through artifact creation - generate everything needed to start imp
 
 5. **Show final status**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>"
+    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
 
 **Output**

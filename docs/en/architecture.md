@@ -59,10 +59,10 @@ The plugin uses its own bundled OpenSpec-style scripts, not the upstream `opensp
 
 ## How reference scripts are invoked
 
-SKILL.md files reference scripts using this pattern:
+Skills invoke the shared CLI using this pattern:
 
 ```
-OPENSPEC_DIR='docs' node '<package-root>/assets/skills/openspec-propose/references/new-change.js' "<name>"
+OPENSPEC_DIR='docs' node '<package-root>/assets/skills/_shared/references/openspec-cli.js' new-change "<name>"
 ```
 
-`.opencode/skills/` is a placeholder in skill content, replaced in memory with a quoted package script path during registration. `OPENSPEC_DIR` is set for each invocation, not written into the shared server environment; by default it is `openspec`.
+`.opencode/skills/` is a placeholder in skill content, replaced in memory with the quoted package CLI path during registration. The operation name and arguments follow the script path. `OPENSPEC_DIR` is set for each invocation, not written into the shared server environment; by default it is `openspec`.

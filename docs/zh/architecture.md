@@ -59,10 +59,10 @@ assets/commands/            ctx.command.transform
 
 ## 参考脚本的调用方式
 
-Skills 的 SKILL.md 中引用参考脚本的写法：
+Skills 统一调用 CLI 的写法：
 
 ```
-OPENSPEC_DIR='docs' node '<package-root>/assets/skills/openspec-propose/references/new-change.js' "<name>"
+OPENSPEC_DIR='docs' node '<package-root>/assets/skills/_shared/references/openspec-cli.js' new-change "<name>"
 ```
 
-`.opencode/skills/` 是 skill 内容中的路径占位符，注册时在内存中改写为带引号的包内脚本路径。每次调用单独设置 `OPENSPEC_DIR`，不会写入共享服务进程的环境变量；默认目录为 `openspec`。
+`.opencode/skills/` 是 skill 内容中的路径占位符，注册时在内存中改写为带引号的包内 CLI 路径，子命令和参数紧随其后。每次调用单独设置 `OPENSPEC_DIR`，不会写入共享服务进程的环境变量；默认目录为 `openspec`。

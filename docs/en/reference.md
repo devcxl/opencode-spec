@@ -21,20 +21,22 @@ This document summarizes commands, skills, and workflow provided by `opencode-sp
 
 ## Skills
 
-| Skill | Description | Built-in Scripts |
+| Skill | Description | Unified CLI operations |
 |-------|-------------|-------------------|
-| `openspec-propose` | Create change and generate artifacts | new-change.js, status.js, instructions.js |
-| `openspec-explore` | Explore problems, clarify requirements | list.js |
-| `openspec-apply` | Implement and mark tasks complete | prepare-apply.js, mark-tasks.js |
-| `openspec-archive` | Archive completed change | archive.js |
-| `openspec-new-change` | Start a change incrementally | Reuses propose scripts |
-| `openspec-continue-change` | Create the next artifact | Reuses propose scripts |
-| `openspec-ff-change` | Create planning artifacts in order | Reuses propose scripts |
-| `openspec-update-change` | Revise existing planning artifacts | Reuses status/instructions scripts |
-| `openspec-sync-specs` | Merge change specs into main specs | Agent-driven; reuses status script |
-| `openspec-verify-change` | Review implementation against artifacts | Reuses apply scripts |
-| `openspec-bulk-archive-change` | Archive multiple changes | Reuses archive script |
-| `openspec-onboard` | Guided workflow | Reuses core scripts |
+| `openspec-propose` | Create change and generate artifacts | `new-change`, `status`, `instructions` |
+| `openspec-explore` | Explore problems, clarify requirements | `list` |
+| `openspec-apply` | Implement and mark tasks complete | `prepare-apply`, `mark-tasks` |
+| `openspec-archive` | Archive completed change | `archive` |
+| `openspec-new-change` | Start a change incrementally | Reuses propose operations |
+| `openspec-continue-change` | Create the next artifact | Reuses propose operations |
+| `openspec-ff-change` | Create planning artifacts in order | Reuses propose operations |
+| `openspec-update-change` | Revise existing planning artifacts | Reuses `status` and `instructions` |
+| `openspec-sync-specs` | Merge change specs into main specs | Agent-driven; reuses `status` |
+| `openspec-verify-change` | Review implementation against artifacts | Reuses apply operations |
+| `openspec-bulk-archive-change` | Archive multiple changes | Reuses `list` and `archive` |
+| `openspec-onboard` | Guided workflow | Reuses core operations |
+
+All operations use the bundled Node entry point `assets/skills/_shared/references/openspec-cli.js`.
 
 ## Workflow
 

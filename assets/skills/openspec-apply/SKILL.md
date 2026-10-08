@@ -15,13 +15,13 @@ Implement tasks from an OpenSpec change.
    If a name is provided, use it. Otherwise:
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-   - If ambiguous, run `node .opencode/skills/openspec-explore/references/list.js` to get available changes and use the **question tool** to let the user select
+    - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes and use the **question tool** to let the user select
 
    Always announce: "Using change: <name>" and how to override (e.g., `/opsx-apply <name>`).
 
 2. **Check status to understand the schema**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>"
+    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
    Parse the JSON to understand:
    - `schemaName`: The workflow being used (e.g., "spec-driven")
@@ -31,7 +31,7 @@ Implement tasks from an OpenSpec change.
 3. **Get apply instructions**
 
    ```bash
-   node .opencode/skills/openspec-apply/references/prepare-apply.js --change="<name>"
+    node .opencode/skills/_shared/references/openspec-cli.js prepare-apply --change="<name>"
    ```
 
    This returns:
@@ -77,7 +77,7 @@ Implement tasks from an OpenSpec change.
    - Keep changes minimal and focused
    - Mark task complete using:
      ```bash
-     node .opencode/skills/openspec-apply/references/mark-tasks.js --change="<name>" --complete-ids=<task-id>
+      node .opencode/skills/_shared/references/openspec-cli.js mark-tasks --change="<name>" --complete-ids=<task-id>
      ```
    - Continue to next task
 

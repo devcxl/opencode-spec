@@ -78,7 +78,7 @@ You have full context of the OpenSpec system. Use it naturally, don't force it.
 
 At the start, quickly check what exists:
 ```bash
-node .opencode/skills/openspec-explore/references/list.js
+node .opencode/skills/_shared/references/openspec-cli.js list
 ```
 
 This tells you:
@@ -95,17 +95,17 @@ Think freely. When insights crystallize, you might offer:
 
 If the user asks you to capture the exploration as a new change, transition seamlessly:
 
-1. Run `node .opencode/skills/openspec-propose/references/new-change.js "<name>"` before creating any artifacts. Never create a new change directory under `openspec/changes/` by hand.
-2. Run `node .opencode/skills/openspec-propose/references/status.js "<name>"`, then process the requested artifacts in dependency order. For each requested artifact that is `ready`, run `node .opencode/skills/openspec-propose/references/instructions.js <artifact-id> --change="<name>"`. Before creating a requested artifact, evaluate any condition in its own `instruction` against the explored change; record a deliberate skip instead when the condition does not apply. If a requested artifact is blocked by a direct prerequisite the user did not request, run `instructions.js` for that prerequisite whether it is `ready` or `blocked`. If its own `instruction` states a condition, evaluate that condition against the explored change and record a deliberate skip only when the condition does not apply. If the condition applies, or the prerequisite is not conditional, treat it as a normal prerequisite and ask before expanding the capture.
+1. Run `node .opencode/skills/_shared/references/openspec-cli.js new-change "<name>"` before creating any artifacts. Never create a new change directory under `openspec/changes/` by hand.
+2. Run `node .opencode/skills/_shared/references/openspec-cli.js status "<name>"`, then process the requested artifacts in dependency order. For each requested artifact that is `ready`, run `node .opencode/skills/_shared/references/openspec-cli.js instructions <artifact-id> --change="<name>"`. Before creating a requested artifact, evaluate any condition in its own `instruction` against the explored change; record a deliberate skip instead when the condition does not apply. If a requested artifact is blocked by a direct prerequisite the user did not request, run `instructions` for that prerequisite whether it is `ready` or `blocked`. If its own `instruction` states a condition, evaluate that condition against the explored change and record a deliberate skip only when the condition does not apply. If the condition applies, or the prerequisite is not conditional, treat it as a normal prerequisite and ask before expanding the capture.
 3. Follow the returned `template` and `instruction` fields. Read completed dependency files listed in `dependencies`, and apply `context` and `rules` as constraints without copying them into the artifact. If the instruction delegates creation to a specific skill or command, invoke it; otherwise write the artifact to `resolvedOutputPath`, using the instruction to choose a concrete path when it is a glob. Verify that the selected concrete output exists.
-4. After creating each artifact, re-run `status.js` and continue until every requested artifact is `done`, `skipped`, or was deliberately skipped because its own `instruction` stated a condition that did not apply. Tell the user about a deliberate conditional skip, remember it, and do not reconsider it. Dependencies are enablers, not gates: if a requested artifact is still `blocked` only because you deliberately skipped a conditional prerequisite, run `instructions.js` for that artifact despite the blocked status, then create it using step 3 only when those recorded conditional skips are its sole missing dependencies. If a requested artifact is blocked by a prerequisite the user did not ask to capture and cannot be conditionally skipped, explain that dependency and ask before expanding the capture.
+4. After creating each artifact, re-run the `status` subcommand and continue until every requested artifact is `done`, `skipped`, or was deliberately skipped because its own `instruction` stated a condition that did not apply. Tell the user about a deliberate conditional skip, remember it, and do not reconsider it. Dependencies are enablers, not gates: if a requested artifact is still `blocked` only because you deliberately skipped a conditional prerequisite, run the `instructions` subcommand for that artifact despite the blocked status, then create it using step 3 only when those recorded conditional skips are its sole missing dependencies. If a requested artifact is blocked by a prerequisite the user did not ask to capture and cannot be conditionally skipped, explain that dependency and ask before expanding the capture.
 
 ### When a change exists
 
 If the user mentions a change or you detect one is relevant:
 
 1. **Resolve and read existing artifacts for context**
-   - Run `node .opencode/skills/openspec-propose/references/status.js "<name>"`.
+   - Run `node .opencode/skills/_shared/references/openspec-cli.js status "<name>"`.
    - Use `changeRoot`, `artifactPaths`, and `actionContext` from the status JSON.
    - Read existing files from `artifactPaths.<id>.existingOutputPaths`.
 
@@ -285,7 +285,7 @@ You: 那就完全不一样了。
 - **Don't rush** - Discovery is thinking time, not task time
 - **Don't force structure** - Let patterns emerge naturally
 - **Don't auto-capture** - Offer to save insights, don't just do it
-- **Don't manually scaffold changes** - Never create a new change directory under `openspec/changes/` by hand. Always use `new-change.js` so required metadata such as `.openspec.yaml` is created before writing artifacts.
+- **Don't manually scaffold changes** - Never create a new change directory under `openspec/changes/` by hand. Always use the CLI's `new-change` subcommand so required metadata such as `.openspec.yaml` is created before writing artifacts.
 - **Do visualize** - A good diagram is worth many paragraphs
 - **Do explore the codebase** - Ground discussions in reality
 - **Do question assumptions** - Including the user's and your own

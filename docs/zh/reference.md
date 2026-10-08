@@ -21,20 +21,22 @@
 
 ## Skills
 
-| Skill | 说明 | 内置脚本 |
+| Skill | 说明 | 统一 CLI 子命令 |
 |-------|------|---------|
-| `openspec-propose` | 创建 change 并生成 artifacts | new-change.js, status.js, instructions.js |
-| `openspec-explore` | 探索问题、澄清需求 | list.js |
-| `openspec-apply` | 执行实现并标记任务 | prepare-apply.js, mark-tasks.js |
-| `openspec-archive` | 归档完成的 change | archive.js |
-| `openspec-new-change` | 逐步启动 change | 复用 propose 脚本 |
-| `openspec-continue-change` | 创建下一个 artifact | 复用 propose 脚本 |
-| `openspec-ff-change` | 按依赖顺序生成规划文件 | 复用 propose 脚本 |
-| `openspec-update-change` | 修订现有规划文件 | 复用 status/instructions 脚本 |
-| `openspec-sync-specs` | 合并 delta 到主规格 | Agent 处理，复用 status 脚本 |
-| `openspec-verify-change` | 核对实现与 artifacts | 复用 apply 脚本 |
-| `openspec-bulk-archive-change` | 批量归档 | 复用 archive 脚本 |
-| `openspec-onboard` | 引导完整工作流 | 复用核心脚本 |
+| `openspec-propose` | 创建 change 并生成 artifacts | `new-change`、`status`、`instructions` |
+| `openspec-explore` | 探索问题、澄清需求 | `list` |
+| `openspec-apply` | 执行实现并标记任务 | `prepare-apply`、`mark-tasks` |
+| `openspec-archive` | 归档完成的 change | `archive` |
+| `openspec-new-change` | 逐步启动 change | 复用 propose 子命令 |
+| `openspec-continue-change` | 创建下一个 artifact | 复用 propose 子命令 |
+| `openspec-ff-change` | 按依赖顺序生成规划文件 | 复用 propose 子命令 |
+| `openspec-update-change` | 修订现有规划文件 | 复用 `status`、`instructions` |
+| `openspec-sync-specs` | 合并 delta 到主规格 | Agent 处理，复用 `status` |
+| `openspec-verify-change` | 核对实现与 artifacts | 复用 apply 子命令 |
+| `openspec-bulk-archive-change` | 批量归档 | 复用 `list`、`archive` |
+| `openspec-onboard` | 引导完整工作流 | 复用核心子命令 |
+
+所有操作统一通过插件包内的 Node 入口 `assets/skills/_shared/references/openspec-cli.js` 执行。
 
 ## 工作流
 

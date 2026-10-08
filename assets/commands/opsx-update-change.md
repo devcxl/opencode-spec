@@ -7,7 +7,7 @@ description: 更新 planning artifacts 并保持一致性
 先执行：
 
 ```bash
-node .opencode/skills/openspec-propose/references/status.js "$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js status "$ARGUMENTS"
 ```
 
 然后：

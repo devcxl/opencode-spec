@@ -7,7 +7,7 @@ description: 批量归档多个变更
 先执行列出所有变更：
 
 ```bash
-node .opencode/skills/openspec-explore/references/list.js
+node .opencode/skills/_shared/references/openspec-cli.js list
 ```
 
 然后：

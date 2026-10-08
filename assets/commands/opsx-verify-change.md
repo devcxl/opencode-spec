@@ -7,7 +7,7 @@ description: 验证实现与 artifact 是否匹配
 先执行：
 
 ```bash
-node .opencode/skills/openspec-apply/references/prepare-apply.js --change="$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js prepare-apply --change="$ARGUMENTS"
 ```
 
 然后从三个维度验证：

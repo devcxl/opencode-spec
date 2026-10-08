@@ -7,8 +7,8 @@ description: 快速创建所有 planning artifacts
 执行：
 
 ```bash
-node .opencode/skills/openspec-propose/references/new-change.js "$ARGUMENTS"
-node .opencode/skills/openspec-propose/references/status.js "$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js new-change "$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js status "$ARGUMENTS"
 ```
 
 然后按依赖顺序创建所有 artifact（同 `/opsx-propose` 流程）。

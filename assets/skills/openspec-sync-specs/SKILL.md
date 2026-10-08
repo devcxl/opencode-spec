@@ -19,7 +19,7 @@ This is an **agent-driven** operation - you will read delta specs and directly e
    If a name is provided, use it. Otherwise:
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-   - If ambiguous, run `node .opencode/skills/openspec-explore/references/list.js` to get available changes and use the **question tool** to let the user select
+    - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes and use the **question tool** to let the user select
 
    When prompting, show changes that have delta specs (under `specs/` directory).
 
@@ -29,7 +29,7 @@ This is an **agent-driven** operation - you will read delta specs and directly e
 
    Run:
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>"
+    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
 
    The JSON includes `planningHome.specsDir`. Main specs live under `<planningHome.specsDir>/` — use that (store-aware) directory for every main-spec path below.

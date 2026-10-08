@@ -6,7 +6,7 @@ description: 探索模式 - 思考、分析、可视化，不实现
 
 **探索模式 = 思考，不实现。** 可以读文件、搜索代码、研究代码库，但绝不能写代码或实现功能。
 
-如果用户要求创建 OpenSpec artifact 来捕获探索成果，通过 `new-change.js` 创建变更目录（不要手动创建），然后处理 requested artifact。
+如果用户要求创建 OpenSpec artifact 来捕获探索成果，通过统一 CLI 的 `new-change` 子命令创建变更目录（不要手动创建），然后处理 requested artifact。
 
 如果用户有模糊想法、具体问题、或需要对比方案时很有用。
 

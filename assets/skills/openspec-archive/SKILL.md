@@ -17,7 +17,7 @@ Archive a completed change in the OpenSpec workflow.
    If a name is provided, use it. Otherwise:
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-   - If ambiguous, run `node .opencode/skills/openspec-explore/references/list.js` to get available changes. Use the **question tool** to let the user select.
+    - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes. Use the **question tool** to let the user select.
 
    When prompting, show only active changes (not already archived).
    Include the schema used for each change if available.
@@ -28,7 +28,7 @@ Archive a completed change in the OpenSpec workflow.
 
    After resolving the selected change, run:
    ```bash
-   node .opencode/skills/openspec-archive/references/archive.js --change="<name>" --instructions
+    node .opencode/skills/_shared/references/openspec-cli.js archive --change="<name>" --instructions
    ```
    This lookup is advisory and optional: it only supplies extra prompt inputs, so it must never block archiving.
    If it exits non-zero or returns invalid JSON, continue the archive workflow with no context and no operation guidance. Do not report an error and do not stop.
@@ -39,7 +39,7 @@ Archive a completed change in the OpenSpec workflow.
 
 2. **Check artifact completion status**
 
-   Run `node .opencode/skills/openspec-propose/references/status.js "<name>"` to check artifact completion.
+    Run `node .opencode/skills/_shared/references/openspec-cli.js status "<name>"` to check artifact completion.
 
    Parse the JSON to understand:
    - `schemaName`: The workflow being used
@@ -84,7 +84,7 @@ Archive a completed change in the OpenSpec workflow.
 
    **The archive program never merges or writes specs.** It only checks the declared `--specs-state` and moves the change. All semantic merging is agent work performed here.
 
-   Before a selected sync writes any main spec, run `node .opencode/skills/openspec-propose/references/instructions.js specs --change="<name>"` once. If the lookup fails or returns invalid JSON, report the error and stop before writing any main spec or moving the change. Apply returned `rules` only to the content and form of main specs produced by this merge; do not use them as archive guidance, change CLI behavior, or copy the rule text into any output file.
+    Before a selected sync writes any main spec, run `node .opencode/skills/_shared/references/openspec-cli.js instructions specs --change="<name>"` once. If the lookup fails or returns invalid JSON, report the error and stop before writing any main spec or moving the change. Apply returned `rules` only to the content and form of main specs produced by this merge; do not use them as archive guidance, change CLI behavior, or copy the rule text into any output file.
 
    Then run the inline sync for change '<name>', passing the delta spec analysis and the fetched specs-rule snapshot. The inline sync must reuse that snapshot without fetching instructions again. Do not delegate it to a background task — step 5 would move `changeRoot` out from under a sync that is still reading it.
 
@@ -95,7 +95,7 @@ Archive a completed change in the OpenSpec workflow.
    Archive is move-only: it never writes main specs and never merges deltas. Pass the state you established in step 4.
 
    ```bash
-   node .opencode/skills/openspec-archive/references/archive.js --change="<name>" --specs-state=<synced|skipped>
+    node .opencode/skills/_shared/references/openspec-cli.js archive --change="<name>" --specs-state=<synced|skipped>
    ```
 
    - Pass `--specs-state=synced` only after a verified agent merge.
@@ -140,7 +140,7 @@ Archive a completed change in the OpenSpec workflow.
 - If sync is requested, run the inline sync and verify the main specs before moving `changeRoot`
 - If delta specs exist, always run the sync assessment and show the combined summary before prompting
 - Pass an explicit `--specs-state` whenever delta specs exist; `--specs-state=skipped` requires explicit user confirmation
-- Never bypass the incomplete-change hard block: archive.js refuses to move a change with incomplete tasks or missing planning artifacts, and there is no override flag
+- Never bypass the incomplete-change hard block: the CLI's `archive` subcommand refuses to move a change with incomplete tasks or missing planning artifacts, and there is no override flag
 - Apply relevant runtime context and report conflicts; operation guidance remains advisory
 - Consider every guidance entry and explain any inapplicable or conflicting advice
 - Existing CLI checks, resolved paths, prompts, and command contracts are unchanged

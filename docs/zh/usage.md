@@ -78,13 +78,13 @@ explore（可选，随时使用）
 | Skill | `openspec-bulk-archive-change` | Agent 直接调用 |
 | Skill | `openspec-onboard` | Agent 直接调用 |
 
-## 4. 内置参考脚本
+## 4. 内置 Node CLI
 
-每个 skill 内置 JavaScript 脚本，脚本位于插件的 `assets/skills/<skill-name>/references/` 目录，通过 `node` 执行：
+所有 skill 都通过 `node` 执行插件包内的统一 CLI：`assets/skills/_shared/references/openspec-cli.js`：
 
-- `openspec-propose`：new-change.js、status.js、instructions.js
-- `openspec-explore`：list.js
-- `openspec-apply`：prepare-apply.js、mark-tasks.js
-- `openspec-archive`：archive.js
+- `list`
+- `new-change <name>`、`status <name>`、`instructions <artifact-id> --change=<name>`
+- `prepare-apply --change=<name>`、`mark-tasks --change=<name> ...`
+- `archive --change=<name> ...`（包括 `--instructions` 模式）
 
-这些脚本替代外部 openspec CLI，直接操作 `openspec/` 目录结构。扩展技能（new-change / continue-change / ff-change / update-change / verify-change / sync-specs / bulk-archive-change / onboard）复用上述核心脚本完成各自流程。
+CLI 将子命令分发到 `openspec.js` 中的共享工作流实现；它替代外部 OpenSpec CLI，不增加该依赖。扩展技能复用这些子命令。

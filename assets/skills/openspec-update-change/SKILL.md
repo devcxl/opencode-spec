@@ -15,7 +15,7 @@ Revise a change's existing planning artifacts and keep them coherent. Never edit
    If a name is provided, use it. Otherwise:
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-   - If ambiguous, run `node .opencode/skills/openspec-explore/references/list.js` to get available changes sorted by most recently modified, and use the **question tool** to let the user select
+    - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes sorted by most recently modified, and use the **question tool** to let the user select
 
    When prompting, present the top 3-4 most recently modified changes as options, showing:
    - Change name
@@ -28,7 +28,7 @@ Revise a change's existing planning artifacts and keep them coherent. Never edit
 
 2. **Get the change's artifacts**
    ```bash
-   node .opencode/skills/openspec-propose/references/status.js "<name>"
+    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
    Parse the JSON to understand current state. The response includes:
    - `schemaName`: The workflow schema being used (e.g., "spec-driven")
@@ -54,7 +54,7 @@ Revise a change's existing planning artifacts and keep them coherent. Never edit
    - If the user rejects a revision, do not write it - leave that artifact unchanged.
    - When a substantial rewrite is needed, get that artifact's rules and template first:
      ```bash
-     node .opencode/skills/openspec-propose/references/instructions.js <artifact-id> --change="<name>"
+      node .opencode/skills/_shared/references/openspec-cli.js instructions <artifact-id> --change="<name>"
      ```
 
 6. **Point to the next step (guidance only - NEVER act on it)**

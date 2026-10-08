@@ -7,7 +7,7 @@ description: 同步 delta specs 到 main specs
 先执行：
 
 ```bash
-node .opencode/skills/openspec-propose/references/status.js "$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js status "$ARGUMENTS"
 ```
 
 然后：

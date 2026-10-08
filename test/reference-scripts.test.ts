@@ -42,22 +42,12 @@ async function createWorkspace() {
   const projectDir = await makeTempDir("opencode-spec-scripts-project-")
   const skillRoot = path.join(projectDir, ".opencode", "skills")
 
-  await mkdir(path.join(skillRoot, "openspec-propose", "references"), { recursive: true })
-  await mkdir(path.join(skillRoot, "openspec-apply", "references"), { recursive: true })
-  await mkdir(path.join(skillRoot, "openspec-archive", "references"), { recursive: true })
-  await mkdir(path.join(skillRoot, "openspec-explore", "references"), { recursive: true })
   await mkdir(path.join(skillRoot, "_shared", "references"), { recursive: true })
 
   const files = [
     ["assets/skills/package.json", ".opencode/skills/package.json"],
     ["assets/skills/_shared/references/openspec.js", ".opencode/skills/_shared/references/openspec.js"],
-    ["assets/skills/openspec-propose/references/new-change.js", ".opencode/skills/openspec-propose/references/new-change.js"],
-    ["assets/skills/openspec-propose/references/status.js", ".opencode/skills/openspec-propose/references/status.js"],
-    ["assets/skills/openspec-propose/references/instructions.js", ".opencode/skills/openspec-propose/references/instructions.js"],
-    ["assets/skills/openspec-apply/references/prepare-apply.js", ".opencode/skills/openspec-apply/references/prepare-apply.js"],
-    ["assets/skills/openspec-apply/references/mark-tasks.js", ".opencode/skills/openspec-apply/references/mark-tasks.js"],
-    ["assets/skills/openspec-archive/references/archive.js", ".opencode/skills/openspec-archive/references/archive.js"],
-    ["assets/skills/openspec-explore/references/list.js", ".opencode/skills/openspec-explore/references/list.js"],
+    ["assets/skills/_shared/references/openspec-cli.js", ".opencode/skills/_shared/references/openspec-cli.js"],
   ] as const
 
   for (const [source, target] of files) {
@@ -70,16 +60,23 @@ async function createWorkspace() {
   return projectDir
 }
 
-async function runJson(projectDir: string, scriptRelativePath: string, args: string[] = []) {
-  const scriptPath = path.join(projectDir, scriptRelativePath)
-  const { stdout } = await execFileAsync("node", [scriptPath, ...args], { cwd: projectDir })
+const CLI_SCRIPT = ".opencode/skills/_shared/references/openspec-cli.js"
+
+async function runCli(projectDir: string, args: string[], env: Record<string, string> = {}) {
+  const scriptPath = path.join(projectDir, CLI_SCRIPT)
+  return execFileAsync("node", [scriptPath, ...args], {
+    cwd: projectDir,
+    env: { ...process.env, ...env },
+  })
+}
+
+async function runJson(projectDir: string, command: string, args: string[] = [], env: Record<string, string> = {}) {
+  const { stdout } = await runCli(projectDir, [command, ...args], env)
   return JSON.parse(stdout) as Record<string, unknown>
 }
 
-const ARCHIVE_SCRIPT = ".opencode/skills/openspec-archive/references/archive.js"
-
 async function prepareChange(projectDir: string, displayName: string) {
-  const created = await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", [displayName])
+  const created = await runJson(projectDir, "new-change", [displayName])
   const slug = String(created.slug)
   const baseDir = path.join(projectDir, "openspec", "changes", slug)
   await writeFile(path.join(baseDir, "proposal.md"), "# Proposal\n", "utf8")
@@ -92,7 +89,7 @@ describe("reference scripts", () => {
   it("new-change 创建 .openspec.yaml 且初始状态中 proposal 为 ready", async () => {
     const projectDir = await createWorkspace()
 
-    const created = await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Demo Change"])
+    const created = await runJson(projectDir, "new-change", ["Demo Change"])
     expect(created.slug).toBe("demo-change")
 
     const yamlPath = path.join(projectDir, "openspec", "changes", "demo-change", ".openspec.yaml")
@@ -100,7 +97,7 @@ describe("reference scripts", () => {
     const yamlContent = await readFile(yamlPath, "utf8")
     expect(yamlContent).toContain("schema: spec-driven")
 
-    const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["demo-change"])
+    const status = await runJson(projectDir, "status", ["demo-change"])
     expect(status.slug).toBe("demo-change")
     const proposalArtifact = (status.artifacts as Array<{ id: string; state: string; status: string }>).find((a) => a.id === "proposal")
     expect(proposalArtifact?.status).toBe("ready")
@@ -108,13 +105,61 @@ describe("reference scripts", () => {
     expect(status.isPlanningComplete).toBe(false)
   })
 
-  it("list.js 遇到损坏变更目录时降级为 invalid，不导致全局崩溃", async () => {
+  it("prepare-apply 通过统一 CLI 返回已完成任务的上下文", async () => {
     const projectDir = await createWorkspace()
-    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Good Change"])
+    const { baseDir, slug } = await prepareChange(projectDir, "Prepared Change")
+    await writeFile(path.join(baseDir, "specs", "spec.md"), "# Spec\n", "utf8")
+
+    const result = await runJson(projectDir, "prepare-apply", [`--change=${slug}`])
+
+    expect(result.state).toBe("all_done")
+    expect(result.progress).toMatchObject({ complete: 1, remaining: 0, total: 1 })
+    expect(result.contextFiles).toContain(`openspec/changes/${slug}/tasks.md`)
+  })
+
+  it("CLI 错误以 JSON 输出并以非零状态退出", async () => {
+    const projectDir = await createWorkspace()
+    const failure = await runCli(projectDir, ["unknown-command"]).then(
+      () => undefined,
+      (error: unknown) => error as Error & { code?: number; stderr?: string },
+    )
+
+    expect(failure).toBeDefined()
+    expect(failure?.code).toBe(1)
+    expect(JSON.parse(String(failure?.stderr))).toMatchObject({ error: expect.stringContaining("unknown-command") })
+  })
+
+  it("CLI 对缺少必需参数返回 JSON 用法错误", async () => {
+    const projectDir = await createWorkspace()
+    const failure = await runCli(projectDir, ["status"]).then(
+      () => undefined,
+      (error: unknown) => error as Error & { code?: number; stderr?: string },
+    )
+
+    expect(failure?.code).toBe(1)
+    expect(JSON.parse(String(failure?.stderr))).toMatchObject({ error: expect.stringContaining("Usage:") })
+  })
+
+  it("CLI 使用每次调用的 OPENSPEC_DIR 隔离项目数据", async () => {
+    const projectDir = await createWorkspace()
+    const openspecDir = "planning docs"
+    const created = await runJson(projectDir, "new-change", ["Scoped Change"], { OPENSPEC_DIR: openspecDir })
+
+    expect(created.path).toBe(`${openspecDir}/changes/scoped-change`)
+    expect(await exists(path.join(projectDir, openspecDir, "changes", "scoped-change"))).toBe(true)
+    expect(await exists(path.join(projectDir, "openspec"))).toBe(false)
+
+    const status = await runJson(projectDir, "status", ["scoped-change"], { OPENSPEC_DIR: openspecDir })
+    expect(status.slug).toBe("scoped-change")
+  })
+
+  it("list 遇到损坏变更目录时降级为 invalid，不导致全局崩溃", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, "new-change", ["Good Change"])
     const brokenDir = path.join(projectDir, "openspec", "changes", "broken-change")
     await mkdir(brokenDir, { recursive: true })
 
-    const listResult = await runJson(projectDir, ".opencode/skills/openspec-explore/references/list.js")
+    const listResult = await runJson(projectDir, "list")
     const active = listResult.active as Array<{ name: string; status: string; error?: string }>
     expect(active.length).toBe(2)
     const broken = active.find((c) => c.name === "broken-change")
@@ -125,13 +170,13 @@ describe("reference scripts", () => {
     expect(good?.status).not.toBe("invalid")
   })
 
-  it("instructions.js 为 specs 返回模式路径而非锁死单一 spec.md", async () => {
+  it("instructions 为 specs 返回模式路径而非锁死单一 spec.md", async () => {
     const projectDir = await createWorkspace()
-    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Pattern Change"])
+    await runJson(projectDir, "new-change", ["Pattern Change"])
     const baseDir = path.join(projectDir, "openspec", "changes", "pattern-change")
     await writeFile(path.join(baseDir, "proposal.md"), "# Proposal\n", "utf8")
 
-    const instructions = await runJson(projectDir, ".opencode/skills/openspec-propose/references/instructions.js", [
+    const instructions = await runJson(projectDir, "instructions", [
       "specs",
       "--change=pattern-change",
     ])
@@ -141,7 +186,7 @@ describe("reference scripts", () => {
 
   it("mark-tasks 会按机器任务 ID 勾选正确任务，并写入验证说明", async () => {
     const projectDir = await createWorkspace()
-    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Task Change"])
+    await runJson(projectDir, "new-change", ["Task Change"])
 
     const baseDir = path.join(projectDir, "openspec", "changes", "task-change")
     await writeFile(path.join(baseDir, "design.md"), "# Design\n", "utf8")
@@ -152,7 +197,7 @@ describe("reference scripts", () => {
       "utf8",
     )
 
-    const result = await runJson(projectDir, ".opencode/skills/openspec-apply/references/mark-tasks.js", [
+    const result = await runJson(projectDir, "mark-tasks", [
       "--change=task-change",
       "--complete-ids=1.2",
       "--verification-summary=已跑单测",
@@ -176,7 +221,7 @@ describe("reference scripts", () => {
     const mainSpecPath = path.join(mainSpecDir, "spec.md")
     await writeFile(mainSpecPath, "# Agent Merged Spec\n", "utf8")
 
-    const archived = await runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"])
+    const archived = await runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=synced"])
 
     expect(String(archived.archivedTo)).toMatch(new RegExp(`openspec/changes/archive/\\d{4}-\\d{2}-\\d{2}-${slug}`))
     expect(archived.specsState).toBe("synced")
@@ -199,7 +244,7 @@ describe("reference scripts", () => {
     const datePrefix = new Date().toISOString().slice(0, 10)
     await mkdir(path.join(projectDir, "openspec", "changes", "archive", `${datePrefix}-${slug}`), { recursive: true })
 
-    await expect(runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"])).rejects.toThrow()
+    await expect(runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=synced"])).rejects.toThrow()
     expect(await readFile(mainSpecPath, "utf8")).toBe("# Agent Merged Spec\n")
     expect(await exists(baseDir)).toBe(true)
   })
@@ -209,7 +254,7 @@ describe("reference scripts", () => {
     const { baseDir, slug } = await prepareChange(projectDir, "Undeclared Change")
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
 
-    await expect(runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug])).rejects.toThrow(/--specs-state/)
+    await expect(runJson(projectDir, "archive", ["--change=" + slug])).rejects.toThrow(/--specs-state/)
     expect(await exists(baseDir)).toBe(true)
     expect(await exists(path.join(projectDir, "openspec", "specs", slug))).toBe(false)
   })
@@ -220,7 +265,7 @@ describe("reference scripts", () => {
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
 
     await expect(
-      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=none"]),
+      runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=none"]),
     ).rejects.toThrow(/冲突|none/)
     expect(await exists(baseDir)).toBe(true)
   })
@@ -231,7 +276,7 @@ describe("reference scripts", () => {
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
 
     await expect(
-      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=merged"]),
+      runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=merged"]),
     ).rejects.toThrow(/--specs-state/)
     expect(await exists(baseDir)).toBe(true)
   })
@@ -243,7 +288,7 @@ describe("reference scripts", () => {
     await writeFile(path.join(baseDir, ".openspec.yaml"), "skip_specs: true\n", "utf8")
 
     await expect(
-      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"]),
+      runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=synced"]),
     ).rejects.toThrow(/冲突|skip_specs/)
     expect(await exists(baseDir)).toBe(true)
   })
@@ -253,7 +298,7 @@ describe("reference scripts", () => {
     const { baseDir, slug } = await prepareChange(projectDir, "Skip Specs Change")
     await writeFile(path.join(baseDir, ".openspec.yaml"), "skip_specs: true\n", "utf8")
 
-    const archived = await runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug])
+    const archived = await runJson(projectDir, "archive", ["--change=" + slug])
 
     expect(archived.specsState).toBe("skipped")
     expect(archived.specsSkipped).toBe(true)
@@ -266,7 +311,7 @@ describe("reference scripts", () => {
     const { baseDir, slug } = await prepareChange(projectDir, "Explicit Skip Change")
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
 
-    const archived = await runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=skipped"])
+    const archived = await runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=skipped"])
 
     expect(archived.specsState).toBe("skipped")
     expect(archived.specsSkipped).toBe(true)
@@ -287,7 +332,7 @@ describe("reference scripts", () => {
     await symlink(outsideDir, path.join(archiveRoot, `${datePrefix}-${slug}`), "dir")
 
     await expect(
-      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced"]),
+      runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=synced"]),
     ).rejects.toThrow(/符号链接/)
     expect(await exists(baseDir)).toBe(true)
   })
@@ -298,9 +343,12 @@ describe("reference scripts", () => {
     await writeFile(path.join(baseDir, "specs", "spec.md"), "# Delta Spec\n", "utf8")
     await writeFile(path.join(baseDir, "tasks.md"), "# Tasks\n\n## Implementation\n- [ ] 1.1 待办\n", "utf8")
 
+    await expect(runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=synced"])).rejects.toThrow(
+      /归档失败|未完成/,
+    )
     await expect(
-      runJson(projectDir, ARCHIVE_SCRIPT, ["--change=" + slug, "--specs-state=synced", "--allow-incomplete"]),
-    ).rejects.toThrow(/归档失败|未完成/)
+      runJson(projectDir, "archive", ["--change=" + slug, "--specs-state=synced", "--allow-incomplete"]),
+    ).rejects.toThrow(/Unknown or invalid argument/)
     expect(await exists(baseDir)).toBe(true)
   })
 
@@ -324,9 +372,9 @@ describe("reference scripts", () => {
 
   it("archive --instructions 返回正确的 JSON 结构", async () => {
     const projectDir = await createWorkspace()
-    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Instruct Change"])
+    await runJson(projectDir, "new-change", ["Instruct Change"])
 
-    const result = await runJson(projectDir, ".opencode/skills/openspec-archive/references/archive.js", [
+    const result = await runJson(projectDir, "archive", [
       "--change=instruct-change",
       "--instructions",
     ])
@@ -340,12 +388,12 @@ describe("reference scripts", () => {
 
   it("skip_specs: true 时 specs 状态为 skipped", async () => {
     const projectDir = await createWorkspace()
-    await runJson(projectDir, ".opencode/skills/openspec-propose/references/new-change.js", ["Skip Specs Change"])
+    await runJson(projectDir, "new-change", ["Skip Specs Change"])
 
     const baseDir = path.join(projectDir, "openspec", "changes", "skip-specs-change")
     await writeFile(path.join(baseDir, ".openspec.yaml"), "skip_specs: true\n", "utf8")
 
-    const status = await runJson(projectDir, ".opencode/skills/openspec-propose/references/status.js", ["skip-specs-change"])
+    const status = await runJson(projectDir, "status", ["skip-specs-change"])
     const specsArtifact = (status.artifacts as Array<{ id: string; state: string }>).find((a) => a.id === "specs")
     expect(specsArtifact?.state).toBe("skipped")
   })

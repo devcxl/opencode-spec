@@ -13,7 +13,7 @@ Guide the user through their first complete OpenSpec workflow cycle. This is a t
 Verify the plugin's built-in reference scripts are available (no external CLI required):
 
 ```bash
-test -f .opencode/skills/openspec-propose/references/new-change.js && echo "SCRIPTS_OK" || echo "SCRIPTS_MISSING"
+test -f .opencode/skills/_shared/references/openspec-cli.js && echo "SCRIPTS_OK" || echo "SCRIPTS_MISSING"
 ```
 
 > Note: `.opencode/skills/` is a source placeholder. The plugin rewrites it in memory
@@ -93,7 +93,7 @@ Once a task is selected, briefly demonstrate explore mode. Spend 1-2 minutes inv
 
 **DO:** Create the change:
 ```bash
-node .opencode/skills/openspec-propose/references/new-change.js "<derived-name>"
+node .opencode/skills/_shared/references/openspec-cli.js new-change "<derived-name>"
 ```
 
 **SHOW:** The folder structure.
@@ -155,7 +155,7 @@ All tasks done! The change is implemented! One more step—let's archive it.
 
 **DO:** If the demo change has delta specs, merge them into the main specs yourself first (agent-driven, the same way `openspec-sync-specs` works). Then archive:
 ```bash
-node .opencode/skills/openspec-archive/references/archive.js --change="<name>" --specs-state=synced
+node .opencode/skills/_shared/references/openspec-cli.js archive --change="<name>" --specs-state=synced
 ```
 If the demo change has no delta specs, omit `--specs-state` instead.
 
@@ -216,4 +216,4 @@ To pick up where we left off later:
 - **Pause for acknowledgment** at marked points, but don't over-pause
 - **Handle exits gracefully**—never pressure the user to continue
 - **Use real codebase tasks**—don't simulate or use fake examples
-- **Archive is move-only**—merge delta specs into main specs yourself before invoking `archive.js`
+- **Archive is move-only**—merge delta specs into main specs yourself before invoking the CLI's `archive` subcommand

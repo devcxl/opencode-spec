@@ -7,7 +7,7 @@ description: 执行 OpenSpec tasks（融入运行时上下文与操作指南）
 先执行：
 
 ```bash
-node .opencode/skills/openspec-apply/references/prepare-apply.js --change="$ARGUMENTS"
+node .opencode/skills/_shared/references/openspec-cli.js prepare-apply --change="$ARGUMENTS"
 ```
 
 然后：
@@ -18,7 +18,7 @@ node .opencode/skills/openspec-apply/references/prepare-apply.js --change="$ARGU
    - 不要将两者复制到实现文件或 planning artifact 中
    - 如果与内置指令冲突，保持内置指令优先
 3. 按顺序实现任务，优先最小正确改动
-4. 每完成若干任务后，执行 `node .opencode/skills/openspec-apply/references/mark-tasks.js --change="$ARGUMENTS" --complete-ids=<task-ids> --verification-summary="<验证结果>"`
+4. 每完成若干任务后，执行 `node .opencode/skills/_shared/references/openspec-cli.js mark-tasks --change="$ARGUMENTS" --complete-ids=<task-ids> --verification-summary="<验证结果>"`
 5. 未明确要求前，不要自动归档
 
 **遇到问题时暂停：**
