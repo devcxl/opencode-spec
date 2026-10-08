@@ -5,9 +5,8 @@ import { fileURLToPath } from "node:url"
 export const projectRoot = process.cwd()
 
 /**
- * 插件内置模板目录：<temp>/templates/
- * openspec.js 位于 <temp>/skills/_shared/references/openspec.js，
- * 向上推导 3 级得到临时根目录（由 setupSkillsDir 复制 skills 与 templates）。
+ * 插件内置模板目录：<package>/assets/templates/
+ * openspec.js 位于 <package>/assets/skills/_shared/references/，向上推导 3 级得到 assets 目录。
  */
 const pluginTemplatesDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "templates")
 
@@ -734,7 +733,7 @@ export async function getTemplate(projectDir = projectRoot, templateName) {
     return projectTemplate
   }
 
-  // 2. 插件内置模板（setupSkillsDir 复制到临时目录）
+  // 2. 插件包内置模板
   const builtinTemplatePath = path.join(pluginTemplatesDir, `${templateName}.md`)
   const builtinTemplate = await readOptionalText(builtinTemplatePath)
   if (builtinTemplate != null) {

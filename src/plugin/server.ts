@@ -3,7 +3,7 @@ import path from "node:path"
 
 import { loadBootstrap } from "./bootstrap.js"
 import { loadCommands } from "./commands.js"
-import { cleanupSkillsDir, loadSkills, renderScriptCalls, setupSkillsDir } from "./skills.js"
+import { loadSkills, renderScriptCalls } from "./skills.js"
 
 /** OpenSpec 默认输出目录名 */
 const DEFAULT_DIRECTORY = "openspec"
@@ -35,55 +35,42 @@ function resolveDirectory(ctx: Plugin.Context): string {
  * 3. session context hook - 在模型请求前注入 bootstrap 提示
  */
 export function createOpencodeSpec(packageRoot: string) {
-  return async (ctx: Plugin.Context): Promise<() => Promise<void>> => {
+  return async (ctx: Plugin.Context): Promise<void> => {
     const directory = resolveDirectory(ctx)
 
     const sourceSkillsDir = path.join(packageRoot, "assets", "skills")
-    const sourceTemplatesDir = path.join(packageRoot, "assets", "templates")
     const commandsDir = path.join(packageRoot, "assets", "commands")
-    const skillsDir = await setupSkillsDir(sourceSkillsDir, sourceTemplatesDir, directory)
+    const bootstrap = await loadBootstrap(packageRoot, ctx.location.project.directory)
 
-    try {
-      const bootstrap = await loadBootstrap(packageRoot, ctx.location.project.directory)
+    const skills = await loadSkills(sourceSkillsDir, directory)
+    await ctx.skill.transform((editor) => {
+      for (const skill of skills) editor.add(skill)
+    })
 
-      const skills = await loadSkills(skillsDir)
-      await ctx.skill.transform((editor) => {
-        for (const skill of skills) editor.add(skill)
-      })
-
-      // 用户已配置的同名 command 优先：先读取当前注册表，跳过已存在的名字
-      const existingCommands = new Set((await ctx.command.list()).data.map((command) => command.name))
-      const commands = loadCommands(commandsDir, skillsDir)
-      await ctx.command.transform((editor) => {
-        for (const command of commands) {
-          if (existingCommands.has(command.name)) continue
-          editor.add({
-            name: command.name,
-            description: command.description,
-            execute: async ({ sessionID, prompt, delivery }) => {
-              if (command.agent) await ctx.session.switchAgent({ sessionID, agent: command.agent })
-              const text = renderScriptCalls(command.template, skillsDir, directory).replaceAll(
-                "$ARGUMENTS",
-                () => prompt.text.trim(),
-              )
-              await ctx.session.prompt({ ...prompt, sessionID, text, delivery })
-            },
-          })
-        }
-      })
-
-      await ctx.session.hook("context", (event) => {
-        if (event.system.some((part) => part.text.includes("EXTREMELY_IMPORTANT"))) return
-        event.system.push({ type: "text", text: bootstrap })
-      })
-      return () => cleanupSkillsDir(skillsDir)
-    } catch (error) {
-      try {
-        await cleanupSkillsDir(skillsDir)
-      } catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], "Plugin setup and cleanup failed")
+    // 用户已配置的同名 command 优先：先读取当前注册表，跳过已存在的名字
+    const existingCommands = new Set((await ctx.command.list()).data.map((command) => command.name))
+    const commands = loadCommands(commandsDir, sourceSkillsDir)
+    await ctx.command.transform((editor) => {
+      for (const command of commands) {
+        if (existingCommands.has(command.name)) continue
+        editor.add({
+          name: command.name,
+          description: command.description,
+          execute: async ({ sessionID, prompt, delivery }) => {
+            if (command.agent) await ctx.session.switchAgent({ sessionID, agent: command.agent })
+            const text = renderScriptCalls(command.template, sourceSkillsDir, directory).replaceAll(
+              "$ARGUMENTS",
+              () => prompt.text.trim(),
+            )
+            await ctx.session.prompt({ ...prompt, sessionID, text, delivery })
+          },
+        })
       }
-      throw error
-    }
+    })
+
+    await ctx.session.hook("context", (event) => {
+      if (event.system.some((part) => part.text.includes("EXTREMELY_IMPORTANT"))) return
+      event.system.push({ type: "text", text: bootstrap })
+    })
   }
 }

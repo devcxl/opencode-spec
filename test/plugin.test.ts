@@ -1,5 +1,5 @@
 import path from "node:path"
-import { access } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 
 import { afterEach, describe, expect, it } from "vitest"
 
@@ -99,16 +99,6 @@ async function setup(options: Parameters<typeof makeContext>[0] = {}) {
   return state
 }
 
-async function exists(filePath: string) {
-  try {
-    await access(filePath)
-    return true
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false
-    throw error
-  }
-}
-
 async function runCommand(state: FakeState, name: string, text: string) {
   const command = state.commands.get(name)
   if (!command) throw new Error(`command not registered: ${name}`)
@@ -133,15 +123,19 @@ describe("OpencodeSpec v2 skills registration", () => {
   })
 
   it("解析 frontmatter、剥离 frontmatter 并重写 .opencode/skills/ 路径", async () => {
+    const sourcePath = path.join(repoRoot, "assets", "skills", "openspec-propose", "SKILL.md")
+    const sourceContent = await readFile(sourcePath, "utf8")
     const state = await setup()
     const skill = state.skills.get("openspec-propose")!
 
+    expect(skill.path).toBe(sourcePath)
     expect(skill.name).toBe("openspec-propose")
     expect(skill.description).toContain("Propose a new change")
     expect(skill.content).not.toContain("name: openspec-propose")
     expect(skill.content).not.toContain(".opencode/skills/")
     expect(skill.content).toContain(path.dirname(skill.path))
     expect(path.basename(skill.path)).toBe("SKILL.md")
+    expect(await readFile(sourcePath, "utf8")).toBe(sourceContent)
   })
 })
 
@@ -201,15 +195,13 @@ describe("OpencodeSpec v2 directory resolution", () => {
     expect(second.skills.get("openspec-propose")!.content).toContain("OPENSPEC_DIR='second-specs' node ")
   })
 
-  it("插件卸载后删除临时技能目录", async () => {
+  it("插件卸载无需临时技能目录清理", async () => {
     const { context, state } = makeContext()
     const cleanup = await createOpencodeSpec(repoRoot)(context)
-    const skillsDir = path.dirname(path.dirname(state.skills.get("openspec-propose")!.path))
+    const skillPath = path.join(repoRoot, "assets", "skills", "openspec-propose", "SKILL.md")
 
-    expect(await exists(skillsDir)).toBe(true)
-    expect(cleanup).toBeTypeOf("function")
-    await cleanup!()
-    expect(await exists(skillsDir)).toBe(false)
+    expect(cleanup).toBeUndefined()
+    expect(state.skills.get("openspec-propose")!.path).toBe(skillPath)
   })
 
   it("OPENSPEC_DIR 环境变量优先于 options.directory", async () => {

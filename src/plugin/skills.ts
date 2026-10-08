@@ -1,5 +1,4 @@
-import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
+import { readdir, readFile } from "node:fs/promises"
 import path from "node:path"
 
 import { Skill } from "@opencode/plugin"
@@ -16,53 +15,6 @@ export function renderScriptCalls(content: string, skillsDir: string, directory:
   return content.replace(scriptCall, (_match, scriptPath: string) =>
     `OPENSPEC_DIR=${shellQuote(directory)} node ${shellQuote(scriptPath)}`,
   )
-}
-
-export async function cleanupSkillsDir(skillsDir: string): Promise<void> {
-  await rm(path.dirname(skillsDir), { recursive: true, force: true })
-}
-
-/**
- * 将插件内置 skills 复制到临时目录，并把 SKILL.md 中的 `.opencode/skills/`
- * 相对路径改写为临时目录的绝对路径，供其中的参考脚本通过相对路径访问。
- *
- * 同时复制内置 templates，供参考脚本通过相对路径读取。
- */
-export async function setupSkillsDir(sourceSkillsDir: string, sourceTemplatesDir: string, directory: string): Promise<string> {
-  const baseDir = await mkdtemp(path.join(tmpdir(), "opencode-spec-skills-"))
-  const destDir = path.join(baseDir, "skills")
-
-  try {
-    const destTemplatesDir = path.join(baseDir, "templates")
-    await cp(sourceSkillsDir, destDir, { recursive: true })
-    await cp(sourceTemplatesDir, destTemplatesDir, { recursive: true })
-
-    async function processDir(dir: string) {
-      const entries = await readdir(dir, { withFileTypes: true })
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name)
-        if (entry.isDirectory()) {
-          await processDir(fullPath)
-          continue
-        }
-        if (entry.name === "SKILL.md") {
-          const content = await readFile(fullPath, "utf8")
-          const rendered = renderScriptCalls(content.replaceAll(".opencode/skills/", `${destDir}/`), destDir, directory)
-          await writeFile(fullPath, rendered, "utf8")
-        }
-      }
-    }
-
-    await processDir(destDir)
-    return destDir
-  } catch (error) {
-    try {
-      await cleanupSkillsDir(destDir)
-    } catch (cleanupError) {
-      throw new AggregateError([error, cleanupError], "Skill setup and cleanup failed")
-    }
-    throw error
-  }
 }
 
 /** 递归收集目录下所有名为 SKILL.md 的文件 */
@@ -113,19 +65,20 @@ export const SKILL_ALIASES: Record<string, string> = {
 }
 
 /**
- * 从已部署的 skills 目录加载 V2 Skill.Info 列表。
+ * 从插件包内的 skills 目录加载 V2 Skill.Info 列表，并在内存中渲染脚本路径。
  *
  * frontmatter 解析与 id/name/description/autoinvoke 推导对齐 OpenCode
  * `SkillFile.parse`，保证插件注册的 skill 与内置目录 skill 语义一致。
  * 同时注册上游标准别名（如 openspec-apply-change、openspec-archive-change）。
  */
-export async function loadSkills(skillsDir: string): Promise<Skill.Info[]> {
+export async function loadSkills(skillsDir: string, directory: string): Promise<Skill.Info[]> {
   const files = (await collectSkillFiles(skillsDir)).sort()
   const skills: Skill.Info[] = []
 
   for (const file of files) {
     const raw = await readFile(file, "utf8")
-    const { data, body } = splitFrontmatter(raw)
+    const rendered = renderScriptCalls(raw.replaceAll(".opencode/skills/", `${skillsDir}/`), skillsDir, directory)
+    const { data, body } = splitFrontmatter(rendered)
 
     const id = path.basename(path.dirname(file))
     const name = typeof data.name === "string" && data.name.trim() ? data.name.trim() : id
