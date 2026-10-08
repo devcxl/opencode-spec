@@ -1,4 +1,4 @@
-import { access, copyFile, lstat, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises"
+import { access, lstat, mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -187,24 +187,6 @@ function stringifySimpleDocument(record) {
     .filter(([, value]) => value !== undefined)
     .map(([key, value]) => `${key}: ${formatSimpleValue(value)}`)
     .join("\n")}\n`
-}
-
-export function stripProposalFrontmatter(content) {
-  if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
-    return content
-  }
-
-  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/)
-  if (!match) {
-    throw new Error("proposal.md frontmatter 缺少结束分隔符 ---")
-  }
-
-  return content.slice(match[0].length).replace(/^\r?\n/, "")
-}
-
-export function formatProposalWithFrontmatter(content, frontmatter) {
-  const body = stripProposalFrontmatter(content)
-  return `---\n${stringifySimpleDocument({ slug: frontmatter.slug, createdAt: frontmatter.createdAt })}---\n\n${body}`
 }
 
 export function parseProposalFrontmatter(content) {
@@ -511,24 +493,6 @@ export async function listFilesRecursive(dirPath) {
   )
 
   return files.flat().sort((left, right) => left.localeCompare(right))
-}
-
-export async function copyDirectory(sourceDir, targetDir) {
-  const entries = await readdir(sourceDir, { withFileTypes: true })
-  await mkdir(targetDir, { recursive: true })
-
-  for (const entry of entries) {
-    const sourcePath = path.join(sourceDir, entry.name)
-    const targetPath = path.join(targetDir, entry.name)
-
-    if (entry.isDirectory()) {
-      await copyDirectory(sourcePath, targetPath)
-      continue
-    }
-
-    await ensureParentDir(targetPath)
-    await copyFile(sourcePath, targetPath)
-  }
 }
 
 export function openspecRoot(projectDir = projectRoot) {
