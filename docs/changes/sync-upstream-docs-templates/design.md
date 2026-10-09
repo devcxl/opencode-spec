@@ -40,7 +40,7 @@
 - 保留 env 写入（参考脚本需要），但只写一次、集中处理
 
 **D5: onboard 前置检查**
-- 用 `test -f` 验证 `.opencode/skills/openspec-propose/references/new-change.js` 存在
+- 用 `test -f` 验证 `.opencode/skills/_shared/references/openspec-cli.js` 存在
 - 移除 `openspec --version` 与 "CLI not installed" 阻塞
 
 ## Risks / Trade-offs

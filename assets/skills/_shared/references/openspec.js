@@ -1110,7 +1110,7 @@ export async function verifyChange(projectDir = projectRoot, name) {
 
     if (!content.includes("## Verification Notes")) {
       warnings.push("缺少 Verification Notes，建议补充验证结果")
-      suggestions.push("先通过 mark-tasks.js 追加 verification summary，再归档")
+      suggestions.push("先通过 openspec-cli.js 的 mark-tasks 子命令追加 verification summary，再归档")
     }
   }
 

@@ -16,7 +16,7 @@ This skill allows you to batch-archive changes, handling spec conflicts intellig
 
 1. **Get active changes**
 
-    Run `node .opencode/skills/_shared/references/openspec-cli.js list` to get all active changes.
+   Run `node .opencode/skills/_shared/references/openspec-cli.js list` to get all active changes.
 
    If no active changes exist, inform user and stop.
 
@@ -33,7 +33,7 @@ This skill allows you to batch-archive changes, handling spec conflicts intellig
 
    For each selected change, collect:
 
-    a. **Artifact status** - Run `node .opencode/skills/_shared/references/openspec-cli.js status "<name>"`
+   a. **Artifact status** - Run `node .opencode/skills/_shared/references/openspec-cli.js status "<name>"`
       - Parse `schemaName`, `artifacts`, `planningHome`, `changeRoot`, `artifactPaths`, and `actionContext`
       - Note which artifacts are `done` vs other states
 

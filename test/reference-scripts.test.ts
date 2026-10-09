@@ -13,8 +13,6 @@ const execFileAsync = promisify(execFile)
 const tempDirs: string[] = []
 const repoRoot = path.resolve(__dirname, "..")
 
-const _origOpenspecDir = process.env.OPENSPEC_DIR
-
 beforeEach(() => {
   delete process.env.OPENSPEC_DIR
 })
@@ -138,6 +136,26 @@ describe("reference scripts", () => {
 
     expect(failure?.code).toBe(1)
     expect(JSON.parse(String(failure?.stderr))).toMatchObject({ error: expect.stringContaining("Usage:") })
+  })
+
+  it("instructions 从选项前后都能取得 artifact ID", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, "new-change", ["Ordered Arguments Change"])
+
+    const result = await runJson(projectDir, "instructions", ["--change=ordered-arguments-change", "proposal"])
+
+    expect(result.artifact).toBe("proposal")
+  })
+
+  it("archive 拒绝给布尔选项传值", async () => {
+    const projectDir = await createWorkspace()
+    await runJson(projectDir, "new-change", ["Boolean Flag Change"])
+
+    await expect(
+      runJson(projectDir, "archive", ["--change=boolean-flag-change", "--instructions=true"]),
+    ).rejects.toThrow(/Unknown or invalid argument/)
+
+    expect(await exists(path.join(projectDir, "openspec", "changes", "boolean-flag-change"))).toBe(true)
   })
 
   it("CLI 使用每次调用的 OPENSPEC_DIR 隔离项目数据", async () => {

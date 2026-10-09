@@ -25,7 +25,8 @@ function validateArguments(args, positionalCount, valueFlags, booleanFlags, usag
     const separator = argument.indexOf("=")
     const flag = separator === -1 ? argument : argument.slice(0, separator)
     const expectsValue = valueFlags.includes(flag)
-    if ((!expectsValue && !booleanFlags.includes(flag)) || (expectsValue && separator === -1)) {
+    const isBoolean = booleanFlags.includes(flag)
+    if ((!expectsValue && !isBoolean) || (expectsValue && separator === -1) || (isBoolean && separator !== -1)) {
       throw new Error(`Unknown or invalid argument "${argument}". Usage: openspec-cli ${usage}`)
     }
     if (seenFlags.has(flag)) {
@@ -33,6 +34,8 @@ function validateArguments(args, positionalCount, valueFlags, booleanFlags, usag
     }
     seenFlags.add(flag)
   }
+
+  return positionals
 }
 
 const [command, ...args] = process.argv.slice(2)
@@ -52,10 +55,10 @@ await runJsonCli(async () => {
       return getChangeStatus(undefined, args[0])
 
     case "instructions": {
-      validateArguments(args, 1, ["--change"], [], "instructions <artifact-id> --change=<name>")
+      const [artifactId] = validateArguments(args, 1, ["--change"], [], "instructions <artifact-id> --change=<name>")
       const name = getArgValue("--change", args)
       if (!name) throw new Error("Usage: openspec-cli instructions <artifact-id> --change=<name>")
-      return getArtifactInstructions(undefined, name, args[0])
+      return getArtifactInstructions(undefined, name, artifactId)
     }
 
     case "prepare-apply": {

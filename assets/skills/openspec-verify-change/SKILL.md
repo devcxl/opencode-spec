@@ -15,7 +15,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
    If a name is provided, use it. Otherwise:
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-    - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes and use the **question tool** to let the user select
+   - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes and use the **question tool** to let the user select
 
    When prompting, show changes that have implementation tasks (tasks artifact exists).
    Include the schema used for each change if available.
@@ -25,7 +25,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
 2. **Check status to understand the schema**
    ```bash
-    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
    Parse the JSON to understand:
    - `schemaName`: The workflow being used (e.g., "spec-driven")
@@ -35,7 +35,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 3. **Get planning context and load artifacts**
 
    ```bash
-    node .opencode/skills/_shared/references/openspec-cli.js prepare-apply --change="<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js prepare-apply --change="<name>"
    ```
 
    This returns the change directory and `contextFiles` (artifact ID -> array of concrete file paths). Read all available artifacts from `contextFiles`.

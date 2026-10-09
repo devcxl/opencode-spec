@@ -15,7 +15,7 @@ Continue working on a change by creating the next artifact.
    If a name is provided, use it. Otherwise:
    - Infer from conversation context if the user mentioned a change
    - Auto-select if only one active change exists
-    - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes sorted by most recently modified, and use the **question tool** to let the user select
+   - If ambiguous, run `node .opencode/skills/_shared/references/openspec-cli.js list` to get available changes sorted by most recently modified, and use the **question tool** to let the user select
 
    When prompting, present the top 3-4 most recently modified changes as options, showing:
    - Change name
@@ -28,7 +28,7 @@ Continue working on a change by creating the next artifact.
 
 2. **Check current status**
    ```bash
-    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
    Parse the JSON to understand current state. The response includes:
    - `schemaName`: The workflow schema being used (e.g., "spec-driven")
@@ -52,7 +52,7 @@ Continue working on a change by creating the next artifact.
    - Pick the FIRST artifact with `status: "ready"` from the status output
    - Get its instructions:
      ```bash
-      node .opencode/skills/_shared/references/openspec-cli.js instructions <artifact-id> --change="<name>"
+     node .opencode/skills/_shared/references/openspec-cli.js instructions <artifact-id> --change="<name>"
      ```
    - Parse the JSON. The key fields are:
      - `context`: Project background (constraints for you - do NOT include in output)
@@ -79,7 +79,7 @@ Continue working on a change by creating the next artifact.
 
 4. **After creating an artifact, show progress**
    ```bash
-    node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
+   node .opencode/skills/_shared/references/openspec-cli.js status "<name>"
    ```
 
 **Output**

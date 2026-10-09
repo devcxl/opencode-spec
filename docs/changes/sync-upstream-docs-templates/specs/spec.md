@@ -45,4 +45,4 @@
 
 #### Scenario: 检查内置脚本
 - **WHEN** 用户运行 `/opsx-onboard`
-- **THEN** 前置检查验证 `.opencode/skills/openspec-propose/references/new-change.js` 存在，不执行 `openspec --version`
+- **THEN** 前置检查验证 `.opencode/skills/_shared/references/openspec-cli.js` 存在，不执行 `openspec --version`
